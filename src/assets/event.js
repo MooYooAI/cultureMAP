@@ -1,5 +1,6 @@
 // 행사 상세 페이지: 상태 배지를 오늘 기준으로 고치고, 공유 버튼과 작은 지도를 붙인다.
 import { eventStatus, todayInSeoul } from './lib/events.js';
+import { addBaseTiles } from './lib/tiles.js';
 
 const status = document.getElementById('status');
 if (status) {
@@ -27,7 +28,7 @@ function miniMap() {
   const t = window.SITE_TILES;
   const pos = [Number(el.dataset.lat), Number(el.dataset.lng)];
   const map = L.map(el, { scrollWheelZoom: false, dragging: !L.Browser.mobile }).setView(pos, 15);
-  L.tileLayer(t.url, { maxZoom: t.maxZoom, attribution: t.attribution, subdomains: t.subdomains || 'abc' }).addTo(map);
+  addBaseTiles(map, t);
   L.marker(pos, {
     icon: L.divIcon({
       className: 'pin-wrap',

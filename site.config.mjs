@@ -8,12 +8,18 @@ export default {
   siteUrl: (process.env.SITE_URL || 'https://mooyooai.github.io/cultureMAP').replace(/\/$/, ''),
   // 지도 타일. 지형(산·음영) 없이 도로·지명만 담백하게 보이는 CARTO Voyager.
   // CARTO 무료 타일은 비상업 용도 기준이라, 광고를 붙여 수익이 나기 시작하면 VWorld·카카오 등 키가 있는 타일로 바꾼다.
+  // 기본 타일이 안 불러와지면(차단·장애) fallback(OSM)으로 자동 전환하고, 색을 옅게 눌러 비슷한 분위기로 보여 준다.
   tiles: {
     url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
     subdomains: 'abcd',
     maxZoom: 19,
+    fallback: {
+      url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 19,
+    },
   },
   // 출처별 표시 문구. 실제로 쓰인 출처만 페이지 하단에 나온다.
   attributions: {
