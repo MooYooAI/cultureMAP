@@ -72,19 +72,27 @@ function ensureMap() {
   if (map || !window.L) return map;
   const t = window.SITE_TILES;
   map = L.map('map', { zoomControl: true, attributionControl: true }).setView([36.3, 127.8], 7);
-  L.tileLayer(t.url, { maxZoom: t.maxZoom, attribution: t.attribution }).addTo(map);
-  cluster = L.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 45 });
+  L.tileLayer(t.url, { maxZoom: t.maxZoom, attribution: t.attribution, subdomains: t.subdomains || 'abc' }).addTo(map);
+  cluster = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: 45,
+    iconCreateFunction: (c) =>
+      L.divIcon({ className: 'pin-wrap', html: `<span class="bubble">${c.getChildCount()}</span>`, iconSize: [44, 44] }),
+  });
   map.addLayer(cluster);
+  map.on('zoomstart', unhighlight);
   return map;
 }
 
+const PIN_EMOJI = { festival: '🎉', performance: '🎭', exhibition: '🖼️', event: '🎈' };
+
 function markerIcon(e) {
   return L.divIcon({
-    className: '',
-    html: `<span class="pin pin-${e.category}${e.isFree ? ' pin-free' : ''}" aria-hidden="true"></span>`,
-    iconSize: [26, 26],
-    iconAnchor: [13, 26],
-    popupAnchor: [0, -24],
+    className: 'pin-wrap',
+    html: `<span class="pin pin-${e.category}${e.isFree ? ' pin-free' : ''}" aria-hidden="true"><span class="pin-emoji">${PIN_EMOJI[e.category] || '📍'}</span></span>`,
+    iconSize: [40, 46],
+    iconAnchor: [20, 44],
+    popupAnchor: [0, -40],
   });
 }
 
@@ -99,6 +107,7 @@ function popupHtml(e) {
 
 function renderMarkers(list, fit) {
   if (!ensureMap()) return;
+  unhighlight();
   cluster.clearLayers();
   markers.clear();
   for (const e of list.filter(hasLocation)) {
@@ -126,6 +135,31 @@ function fitMap(list) {
     const r = REGION_BY_SLUG[state.region];
     map.setView([r.lat, r.lng], 9);
   }
+}
+
+// 목록 카드에 마우스를 올리면 지도에서 그 행사 표시(묶여 있으면 묶음 표시)를 통통 튀게 한다.
+let highlighted = null;
+let highlightedId = null;
+function highlight(id) {
+  if (id === highlightedId) return;
+  unhighlight();
+  highlightedId = id;
+  const m = markers.get(id);
+  if (!m || !map) return;
+  const shown = cluster.getVisibleParent(m);
+  const el = shown?.getElement();
+  if (!el) return;
+  el.classList.add('is-hot');
+  shown.setZIndexOffset(1000);
+  highlighted = shown;
+}
+
+function unhighlight() {
+  highlightedId = null;
+  if (!highlighted) return;
+  highlighted.getElement()?.classList.remove('is-hot');
+  highlighted.setZIndexOffset(0);
+  highlighted = null;
 }
 
 function focusEvent(id) {
@@ -195,6 +229,18 @@ function bind() {
     render({ fit: true });
   });
   $('#near').addEventListener('click', locate);
+  const list = $('#list');
+  const hoverTarget = (ev) => ev.target.closest('.card')?.dataset.id;
+  list.addEventListener('mouseover', (ev) => {
+    const id = hoverTarget(ev);
+    if (id) highlight(id);
+  });
+  list.addEventListener('mouseleave', unhighlight);
+  list.addEventListener('focusin', (ev) => {
+    const id = hoverTarget(ev);
+    if (id) highlight(id);
+  });
+  list.addEventListener('focusout', unhighlight);
   $('#list').addEventListener('click', (ev) => {
     const btn = ev.target.closest('.map-btn');
     if (btn) focusEvent(btn.closest('.card').dataset.id);

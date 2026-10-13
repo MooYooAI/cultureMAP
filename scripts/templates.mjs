@@ -24,9 +24,12 @@ ${noindex ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(abs(path))}">
 <meta property="og:locale" content="ko_KR">
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#ff7eb3">
 <link rel="icon" href="${root}assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="${root}manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
 <link rel="stylesheet" href="${root}assets/styles.css">
 ${head}
 </head>
@@ -52,7 +55,7 @@ function footer({ root, sources }) {
     <ul class="region-links">${REGIONS.map((r) => `<li><a href="${root}region/${r.slug}/">${esc(r.name)}</a></li>`).join('')}</ul>
   </nav>
   ${notes.map((n) => `<p class="attribution">${esc(n)}</p>`).join('\n  ')}
-  <p class="attribution">지도: &copy; OpenStreetMap contributors</p>
+  <p class="attribution">지도: &copy; OpenStreetMap contributors, &copy; CARTO</p>
 </footer>`;
 }
 
@@ -108,6 +111,10 @@ ${list}
   <section class="map-pane" aria-label="행사 지도">
     <div id="map"></div>
   </section>
+  <aside class="ad-pane" aria-label="광고">
+    <div class="ad-slot ad-tall"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 600</small></p></div>
+    <div class="ad-slot ad-square"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 250</small></p></div>
+  </aside>
 </main>`;
   const head = `<link rel="stylesheet" href="${root}assets/vendor/leaflet/leaflet.css">
 <link rel="stylesheet" href="${root}assets/vendor/leaflet/MarkerCluster.css">
