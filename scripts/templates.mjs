@@ -55,7 +55,7 @@ function footer({ root, sources }) {
     <ul class="region-links">${REGIONS.map((r) => `<li><a href="${root}region/${r.slug}/">${esc(r.name)}</a></li>`).join('')}</ul>
   </nav>
   ${notes.map((n) => `<p class="attribution">${esc(n)}</p>`).join('\n  ')}
-  <p class="attribution">지도: &copy; OpenStreetMap contributors, &copy; CARTO</p>
+  <p class="attribution">지도: &copy; OpenStreetMap contributors</p>
 </footer>`;
 }
 
