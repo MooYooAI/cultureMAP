@@ -2,6 +2,7 @@
 import { filterEvents, sortEvents, todayInSeoul, hasLocation, formatRange, CATEGORIES } from './lib/events.js';
 import { renderCard, esc, eventPath, placeLabel } from './lib/render.js';
 import { REGION_BY_SLUG } from './lib/regions.js';
+import { addBaseTiles } from './lib/tiles.js';
 
 const root = document.body.dataset.root || './';
 const presetRegion = document.body.dataset.presetRegion || '';
@@ -72,7 +73,7 @@ function ensureMap() {
   if (map || !window.L) return map;
   const t = window.SITE_TILES;
   map = L.map('map', { zoomControl: true, attributionControl: true }).setView([36.3, 127.8], 7);
-  L.tileLayer(t.url, { maxZoom: t.maxZoom, attribution: t.attribution, subdomains: t.subdomains || 'abc' }).addTo(map);
+  addBaseTiles(map, t);
   cluster = L.markerClusterGroup({
     showCoverageOnHover: false,
     maxClusterRadius: 45,

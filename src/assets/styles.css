@@ -176,6 +176,7 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
   .is-hot .pin, .is-hot .bubble { animation: none; transform: scale(1.3); }
   .is-hot .pin::before, .is-hot .bubble::before { animation: none; opacity: 1; }
 }
+.tiles-fallback .leaflet-tile-pane { filter: saturate(.45) brightness(1.06) contrast(.92); } /* 예비 타일의 산·숲 색을 옅게 */
 .leaflet-popup-content-wrapper { border-radius: 18px; box-shadow: var(--shadow); }
 .popup { display: grid; gap: 2px; min-width: 180px; font-size: 13px; }
 .popup strong { font-size: 15px; margin-top: 2px; }
