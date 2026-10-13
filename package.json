@@ -1,0 +1,27 @@
+{
+  "name": "jiyeok-culture-map",
+  "version": "1.0.0",
+  "description": "전국 축제·공연·전시 일정 지도 (정적 사이트)",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "serve": "node scripts/serve.mjs",
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MooYooAI/cultureMAP.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MooYooAI/-/issues"
+  },
+  "homepage": "https://github.com/MooYooAI/-#readme",
+  "devDependencies": {
+    "leaflet": "^1.9.4",
+    "leaflet.markercluster": "^1.5.3"
+  },
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

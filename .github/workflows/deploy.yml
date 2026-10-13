@@ -1,0 +1,55 @@
+name: Build and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # 매일 오전 6시, 오후 6시(한국 시간)에 데이터를 새로 모아 다시 배포한다.
+  schedule:
+    - cron: '0 21,9 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          # 저장소 Settings → Secrets and variables → Actions 에 키를 넣으면 실제 데이터로 바뀐다.
+          TOURAPI_KEY: ${{ secrets.TOURAPI_KEY }}
+          KOPIS_KEY: ${{ secrets.KOPIS_KEY }}
+          CULTURE_KEY: ${{ secrets.CULTURE_KEY }}
+          SITE_URL: ${{ vars.SITE_URL }}
+      - uses: actions/upload-pages-artifact@v3
+        if: github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
