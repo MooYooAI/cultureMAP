@@ -27,9 +27,14 @@ function miniMap() {
   const t = window.SITE_TILES;
   const pos = [Number(el.dataset.lat), Number(el.dataset.lng)];
   const map = L.map(el, { scrollWheelZoom: false, dragging: !L.Browser.mobile }).setView(pos, 15);
-  L.tileLayer(t.url, { maxZoom: t.maxZoom, attribution: t.attribution }).addTo(map);
+  L.tileLayer(t.url, { maxZoom: t.maxZoom, attribution: t.attribution, subdomains: t.subdomains || 'abc' }).addTo(map);
   L.marker(pos, {
-    icon: L.divIcon({ className: '', html: '<span class="pin pin-festival"></span>', iconSize: [26, 26], iconAnchor: [13, 26] }),
+    icon: L.divIcon({
+      className: 'pin-wrap',
+      html: '<span class="pin pin-festival"><span class="pin-emoji">📍</span></span>',
+      iconSize: [40, 46],
+      iconAnchor: [20, 44],
+    }),
     title: el.dataset.title,
   }).addTo(map);
 }

@@ -6,10 +6,13 @@ export default {
     '지금 전국 곳곳에서 열리는 축제, 공연, 전시 일정을 지역·날짜·종류별로 지도와 목록에서 찾아보세요. 이번 주말 갈 만한 곳, 내 주변 무료 행사까지.',
   // GitHub Pages 프로젝트 사이트 주소(끝에 / 없이). 사이트맵·대표 주소(canonical)에 쓰인다.
   siteUrl: (process.env.SITE_URL || 'https://mooyooai.github.io/cultureMAP').replace(/\/$/, ''),
-  // 지도 타일. 트래픽이 커지면 VWorld·카카오 등 키가 있는 타일로 바꾸는 것을 권장(OSM 공용 서버 이용 정책).
+  // 지도 타일. 지형(산·음영) 없이 도로·지명만 담백하게 보이는 CARTO Voyager.
+  // CARTO 무료 타일은 비상업 용도 기준이라, 광고를 붙여 수익이 나기 시작하면 VWorld·카카오 등 키가 있는 타일로 바꾼다.
   tiles: {
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+    attribution:
+      '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
     maxZoom: 19,
   },
   // 출처별 표시 문구. 실제로 쓰인 출처만 페이지 하단에 나온다.
