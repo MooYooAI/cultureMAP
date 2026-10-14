@@ -240,6 +240,48 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 .sample-note { margin: 0; padding: 8px 16px; background: #fff4cc; color: #8a5a00; font-size: 13px; text-align: center; }
 .related h2 { font-size: 18px; margin: 32px 0 10px; }
 
+/* 날씨 카드(오른쪽 배너 자리) */
+.wx-card {
+  background: linear-gradient(180deg, #eaf4ff 0%, #fff 70%); border: 2px solid #d7e8fb; border-radius: var(--radius);
+  box-shadow: 0 6px 18px rgba(59, 130, 246, .10); padding: 14px 14px 12px;
+}
+.wx-card[hidden], .wx-strip[hidden] { display: none; }
+.wx-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.wx-head h2 { margin: 0; font-family: var(--font-cute); font-weight: 400; font-size: 18px; color: #2f6fc4; }
+.wx-sub { font-size: 12px; color: var(--muted); }
+.wx-today { display: flex; align-items: center; gap: 12px; margin: 8px 0 4px; }
+.wx-big { font-size: 46px; line-height: 1; }
+.wx-temp { margin: 0; font-size: 15px; color: var(--muted); }
+.wx-temp b { font-family: var(--font-cute); font-weight: 400; font-size: 30px; color: var(--text); }
+.wx-desc { margin: 0; font-size: 13px; }
+.wx-tip { margin: 6px 0 10px; padding: 6px 10px; border-radius: 999px; background: #fff; border: 1px solid #d7e8fb; font-size: 13px; text-align: center; }
+.wx-week { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; font-size: 12px; }
+.wx-week li { display: grid; gap: 1px; padding: 6px 0; border-radius: 12px; }
+.wx-week li.is-weekend { background: var(--brand-soft); color: var(--brand-strong); }
+.wx-week .wx-ico { font-size: 18px; }
+.wx-week b { font-weight: 700; }
+.wx-week small { color: var(--muted); }
+.wx-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 8px; }
+.wx-cell {
+  display: flex; align-items: center; justify-content: space-between; gap: 2px; padding: 5px 7px;
+  border: 1px solid #e3eefb; border-radius: 12px; background: #fff; cursor: pointer; font-size: 12px;
+}
+.wx-cell:hover { border-color: var(--brand); }
+.wx-cell .wx-ico { font-size: 15px; }
+.wx-hint { margin: 8px 0 0; font-size: 11px; color: var(--muted); text-align: center; }
+
+/* 좁은 화면: 목록 위 날씨 한 줄 */
+.wx-strip {
+  display: flex; align-items: center; gap: 8px; overflow-x: auto; scrollbar-width: none; white-space: nowrap;
+  margin: 0 0 10px; padding: 8px 12px; border-radius: 999px; background: #eaf4ff; border: 2px solid #d7e8fb; font-size: 13px;
+}
+.wx-strip::-webkit-scrollbar { display: none; }
+.wx-strip.is-region { flex-wrap: wrap; row-gap: 2px; white-space: normal; border-radius: 18px; }
+.wx-strip-title { font-family: var(--font-cute); color: #2f6fc4; }
+.wx-strip-main b { font-size: 15px; }
+.wx-strip-wk { color: var(--brand-strong); font-weight: 700; }
+.wx-strip .wx-cell { flex: 0 0 auto; gap: 4px; padding: 2px 8px; border-radius: 999px; }
+
 /* 하단 */
 .footer { padding: 24px 16px 110px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
 .footer h2 { font-size: 13px; margin: 0 0 8px; color: var(--text); }
@@ -264,5 +306,9 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 @media (min-width: 1280px) {
   .layout { grid-template-columns: 360px minmax(0, 1fr) 300px; }
   .ad-pane, .layout[data-view] .ad-pane { display: grid; margin-top: 0; position: sticky; top: 12px; align-content: start; }
-  .ad-tall { display: grid; height: min(600px, calc(100vh - 290px)); min-height: 260px; }
+  .ad-tall { display: none; } /* 날씨 카드가 위쪽을 쓰고, 아래에 300×250 배너만 남긴다 */
+  .wx-strip { display: none; }
+}
+@media (max-width: 1279px) {
+  .wx-card { display: none; }
 }
