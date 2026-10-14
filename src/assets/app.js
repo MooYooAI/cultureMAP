@@ -131,7 +131,14 @@ function fitMap(list) {
   if (origin) {
     map.setView([origin.lat, origin.lng], 10);
   } else if (located.length) {
-    map.fitBounds(L.latLngBounds(located.map((e) => [e.lat, e.lng])), { padding: [30, 30], maxZoom: 12 });
+    // 넓은 화면에서는 목록·광고 패널이 지도 위에 떠 있으므로, 그 아래로 표시가 숨지 않게 비워 둔다(styles.css의 --map-inset-*).
+    const css = getComputedStyle(map.getContainer());
+    const inset = (side) => parseFloat(css.getPropertyValue(`--map-inset-${side}`)) || 30;
+    map.fitBounds(L.latLngBounds(located.map((e) => [e.lat, e.lng])), {
+      paddingTopLeft: [inset('left'), 30],
+      paddingBottomRight: [inset('right'), 30],
+      maxZoom: 12,
+    });
   } else if (state.region) {
     const r = REGION_BY_SLUG[state.region];
     map.setView([r.lat, r.lng], 9);
