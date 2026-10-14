@@ -56,6 +56,7 @@ function footer({ root, sources }) {
   </nav>
   ${notes.map((n) => `<p class="attribution">${esc(n)}</p>`).join('\n  ')}
   <p class="attribution">지도: &copy; OpenStreetMap contributors</p>
+  <p class="attribution">날씨: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)</p>
 </footer>`;
 }
 
