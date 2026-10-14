@@ -101,6 +101,7 @@ export function appPage({ root, path, region, events, today, sources, noindex })
   <section class="list-pane" aria-labelledby="heading">
     <h1 id="heading">${esc(heading)}</h1>
     <p id="count" class="count" aria-live="polite">${events.length}개 행사</p>
+    <div id="wx-strip" class="wx-strip" hidden></div>
     <ul id="list" class="cards">
 ${list}
     </ul>
@@ -112,7 +113,8 @@ ${list}
   <section class="map-pane" aria-label="행사 지도">
     <div id="map"></div>
   </section>
-  <aside class="ad-pane" aria-label="광고">
+  <aside class="ad-pane" aria-label="날씨와 광고">
+    <section id="wx" class="wx-card" aria-label="날씨 예보" hidden></section>
     <div class="ad-slot ad-tall"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 600</small></p></div>
     <div class="ad-slot ad-square"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 250</small></p></div>
   </aside>

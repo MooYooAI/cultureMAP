@@ -1,7 +1,8 @@
 // 지도+목록 화면. 데이터는 빌드 때 만든 data/events.json 하나만 읽는다(앱으로 확장할 때도 같은 JSON을 쓰면 된다).
-import { filterEvents, sortEvents, todayInSeoul, hasLocation, formatRange, CATEGORIES } from './lib/events.js';
+import { filterEvents, sortEvents, todayInSeoul, hasLocation, formatRange, periodRange, addDays, CATEGORIES } from './lib/events.js';
 import { renderCard, esc, eventPath, placeLabel } from './lib/render.js';
-import { REGION_BY_SLUG } from './lib/regions.js';
+import { REGIONS, REGION_BY_SLUG } from './lib/regions.js';
+import { loadWeather, describe, outingTip } from './lib/weather.js';
 import { addBaseTiles } from './lib/tiles.js';
 
 const root = document.body.dataset.root || './';
@@ -15,6 +16,7 @@ let origin = null;
 let map = null;
 let cluster = null;
 const markers = new Map();
+let weather = null;
 
 function readState() {
   const p = new URLSearchParams(location.search);
@@ -64,6 +66,7 @@ function render({ fit = false } = {}) {
   $('#list').innerHTML = list.map((e) => renderCard(e, { root, today, origin })).join('');
   $('#empty').hidden = list.length > 0;
   renderMarkers(list, fit);
+  renderWeather();
   writeState();
 }
 
@@ -184,6 +187,73 @@ function setView(view, rerender = true) {
   if (rerender) writeState();
 }
 
+// ---- 날씨 (오른쪽 배너 자리 + 좁은 화면에서는 목록 위 한 줄) ----
+// 지역을 고르면 그 지역의 오늘·7일 예보, 전국이면 시·도별 오늘 날씨를 보여 준다.
+
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+const dowOf = (key) => DOW[new Date(`${key}T00:00:00Z`).getUTCDay()];
+
+function renderWeather() {
+  const card = $('#wx');
+  const strip = $('#wx-strip');
+  if (!weather) return;
+  const w = state.region ? weather[state.region] : null;
+  const day = w?.days[today];
+  if (state.region && !day) {
+    card.hidden = strip.hidden = true;
+    return;
+  }
+  card.hidden = strip.hidden = false;
+  if (!state.region) {
+    const cells = REGIONS.filter((r) => weather[r.slug]?.days[today]).map((r) => {
+      const d = weather[r.slug].days[today];
+      const { icon, label } = describe(d.code);
+      return `<button type="button" class="wx-cell" data-region="${r.slug}" title="${r.name} ${label} ${d.max}° / ${d.min}°"><span>${r.name}</span><span class="wx-ico">${icon}</span><b>${d.max}°</b></button>`;
+    });
+    card.innerHTML = `<header class="wx-head"><h2>전국 오늘 날씨</h2><span class="wx-sub">낮 최고</span></header>
+<div class="wx-grid">${cells.join('')}</div>
+<p class="wx-hint">지역을 누르면 그 지역 행사와 주간 예보가 나와요</p>`;
+    strip.classList.remove('is-region');
+    strip.innerHTML = `<span class="wx-strip-title">오늘 날씨</span>${cells.join('')}`;
+    return;
+  }
+  const name = REGION_BY_SLUG[state.region].name;
+  const { icon, label } = describe(day.code);
+  const weekend = periodRange('weekend', today);
+  const week = Array.from({ length: 7 }, (_, i) => addDays(today, i)).filter((k) => w.days[k]);
+  const rain = day.rain == null ? '' : ` · 비 ${day.rain}%`;
+  card.innerHTML = `<header class="wx-head"><h2>${esc(name)} 날씨</h2>${w.now ? `<span class="wx-sub">지금 ${w.now.temp}°</span>` : ''}</header>
+<div class="wx-today"><span class="wx-big">${icon}</span><div><p class="wx-temp"><b>${day.max}°</b> / ${day.min}°</p><p class="wx-desc">${label}${rain}</p></div></div>
+<p class="wx-tip">${outingTip(day)}</p>
+<ol class="wx-week">${week
+    .map((k, i) => {
+      const d = w.days[k];
+      const wk = k >= weekend.from && k <= weekend.to;
+      return `<li class="${wk ? 'is-weekend' : ''}"><span>${i === 0 ? '오늘' : dowOf(k)}</span><span class="wx-ico">${describe(d.code).icon}</span><b>${d.max}°</b><small>${d.min}°</small></li>`;
+    })
+    .join('')}</ol>`;
+  const sat = w.days[weekend.from];
+  const sun = w.days[weekend.to];
+  const wkText = weekend.from === today ? '' : sat ? ` <span class="wx-strip-wk">주말 ${describe(sat.code).icon}${sun && weekend.to !== weekend.from ? describe(sun.code).icon : ''}</span>` : '';
+  strip.classList.add('is-region');
+  strip.innerHTML = `<span class="wx-strip-title">${esc(name)} 오늘</span><span class="wx-strip-main">${icon} <b>${day.max}°</b>/${day.min}°${rain}</span><span class="wx-strip-tip">${outingTip(day)}</span>${wkText}`;
+}
+
+async function initWeather() {
+  try {
+    weather = await loadWeather();
+  } catch {
+    return; // 날씨를 못 받아도 행사 화면은 그대로 둔다.
+  }
+  renderWeather();
+}
+
+function pickRegion(slug) {
+  const sel = $('#region');
+  sel.value = slug;
+  sel.dispatchEvent(new Event('change'));
+}
+
 // ---- 이벤트 연결 ----
 
 function bindChips(id, key) {
@@ -230,6 +300,12 @@ function bind() {
     render({ fit: true });
   });
   $('#near').addEventListener('click', locate);
+  for (const id of ['#wx', '#wx-strip']) {
+    $(id).addEventListener('click', (ev) => {
+      const cell = ev.target.closest('.wx-cell');
+      if (cell) pickRegion(cell.dataset.region);
+    });
+  }
   const list = $('#list');
   const hoverTarget = (ev) => ev.target.closest('.card')?.dataset.id;
   list.addEventListener('mouseover', (ev) => {
@@ -280,6 +356,7 @@ function locate() {
 async function init() {
   syncControls();
   bind();
+  initWeather();
   try {
     const res = await fetch(`${root}data/events.json`);
     events = (await res.json()).events;
