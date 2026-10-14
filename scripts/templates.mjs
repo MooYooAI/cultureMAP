@@ -24,7 +24,7 @@ ${noindex ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(abs(path))}">
 <meta property="og:locale" content="ko_KR">
-<meta name="theme-color" content="#ff7eb3">
+<meta name="theme-color" content="#fff6e9">
 <link rel="icon" href="${root}assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="${root}manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
