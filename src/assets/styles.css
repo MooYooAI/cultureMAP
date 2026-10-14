@@ -106,6 +106,30 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 .thumb-exhibition::after { content: '🖼️'; }
 .thumb-event::after { content: '🎈'; }
 .card-body { min-width: 0; flex: 1; }
+
+/* 티켓 날짜 칸: 시작 전이면 시작일, 진행 중이면 마감일. 본문과는 절취선으로 나뉜다 */
+.card { overflow: hidden; }
+.card::before, .card::after {
+  content: ''; position: absolute; left: 90px; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--bg); border: 2px solid var(--line); transition: border-color .18s;
+}
+.card::before { top: -11px; }
+.card::after { bottom: -11px; }
+.card:hover::before, .card:hover::after, .card:focus-within::before, .card:focus-within::after { border-color: var(--brand); }
+.stub {
+  flex: 0 0 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  min-height: 72px; border-radius: 16px; background: linear-gradient(135deg, #ffe4ef, #ffc2da); color: #c2366f;
+  font-variant-numeric: tabular-nums;
+}
+.card[data-cat='performance'] .stub { background: linear-gradient(135deg, #f1eaff, #dccbff); color: #6a4bd1; }
+.card[data-cat='exhibition'] .stub { background: linear-gradient(135deg, #e3f0ff, #c4defd); color: #2f6fc4; }
+.card[data-cat='event'] .stub { background: linear-gradient(135deg, #fff6d6, #ffe59a); color: #9a6200; }
+.stub-m { font-size: 12px; font-weight: 700; }
+.stub-d { font-family: var(--font-cute); font-size: 30px; line-height: 1; }
+.stub-w { font-size: 11px; font-weight: 700; }
+.card .card-body { order: 1; border-left: 2px dashed var(--line); padding-left: 12px; margin-left: 2px; }
+.card img.thumb { order: 2; flex-basis: 60px; width: 60px; height: 60px; align-self: center; }
+.card .map-btn { order: 3; }
 .card-tags { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
 .card-title { margin: 4px 0 2px; font-family: var(--font-cute); font-weight: 400; font-size: 17px; line-height: 1.35; }
 .card-title a { text-decoration: none; }

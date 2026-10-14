@@ -21,6 +21,15 @@ export function placeLabel(e) {
   return `${region}${city} · ${e.venue}`;
 }
 
+// 티켓 왼쪽 날짜 칸: 시작 전이면 시작일, 진행 중이면 마지막 날을 크게 보여 준다.
+const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
+function ticketStub(e, status) {
+  const upcoming = status.key === 'upcoming';
+  const [y, m, d] = (upcoming ? e.startDate : e.endDate).split('-').map(Number);
+  const dow = WEEKDAYS[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+  return `<div class="stub" aria-hidden="true"><span class="stub-m">${m}월</span><span class="stub-d">${d}</span><span class="stub-w">${dow} ${upcoming ? '시작' : '마감'}</span></div>`;
+}
+
 export function renderCard(e, { root = './', today, origin = null } = {}) {
   const status = eventStatus(e, today);
   const dist =
@@ -29,8 +38,9 @@ export function renderCard(e, { root = './', today, origin = null } = {}) {
   const noMap = hasLocation(e) ? '' : '<span class="badge muted">지도 위치 없음</span>';
   const thumb = e.image?.url
     ? `<img class="thumb" src="${esc(e.image.url)}" alt="" loading="lazy" decoding="async">`
-    : `<div class="thumb thumb-${esc(e.category)}" aria-hidden="true"></div>`;
-  return `<li class="card" data-id="${esc(e.id)}">
+    : '';
+  return `<li class="card" data-id="${esc(e.id)}" data-cat="${esc(e.category)}">
+  ${ticketStub(e, status)}
   ${thumb}
   <div class="card-body">
     <div class="card-tags"><span class="badge cat-${esc(e.category)}">${esc(CATEGORIES[e.category] || '')}</span><span class="badge status-${status.key}">${esc(status.label)}</span>${free}${noMap}${dist}</div>
