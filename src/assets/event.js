@@ -32,7 +32,7 @@ function miniMap() {
   L.marker(pos, {
     icon: L.divIcon({
       className: 'pin-wrap',
-      html: '<span class="pin pin-festival"><span class="pin-emoji">📍</span></span>',
+      html: '<span class="pin pin-here"><span class="pin-ico"></span></span>',
       iconSize: [40, 46],
       iconAnchor: [20, 44],
     }),

@@ -29,8 +29,9 @@ export function renderCard(e, { root = './', today, origin = null } = {}) {
   const noMap = hasLocation(e) ? '' : '<span class="badge muted">지도 위치 없음</span>';
   const thumb = e.image?.url
     ? `<img class="thumb" src="${esc(e.image.url)}" alt="" loading="lazy" decoding="async">`
-    : `<div class="thumb thumb-${esc(e.category)}" aria-hidden="true"></div>`;
-  return `<li class="card" data-id="${esc(e.id)}">
+    : '';
+  return `<li class="card" data-id="${esc(e.id)}" data-cat="${esc(e.category)}">
+  <span class="station" aria-hidden="true"></span>
   ${thumb}
   <div class="card-body">
     <div class="card-tags"><span class="badge cat-${esc(e.category)}">${esc(CATEGORIES[e.category] || '')}</span><span class="badge status-${status.key}">${esc(status.label)}</span>${free}${noMap}${dist}</div>
