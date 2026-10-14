@@ -85,12 +85,10 @@ function ensureMap() {
   return map;
 }
 
-const PIN_EMOJI = { festival: '🎉', performance: '🎭', exhibition: '🖼️', event: '🎈' };
-
 function markerIcon(e) {
   return L.divIcon({
     className: 'pin-wrap',
-    html: `<span class="pin pin-${e.category}${e.isFree ? ' pin-free' : ''}" aria-hidden="true"><span class="pin-emoji">${PIN_EMOJI[e.category] || '📍'}</span></span>`,
+    html: `<span class="pin pin-${e.category}${e.isFree ? ' pin-free' : ''}" aria-hidden="true"><span class="pin-ico"></span></span>`,
     iconSize: [40, 46],
     iconAnchor: [20, 44],
     popupAnchor: [0, -40],
@@ -252,7 +250,7 @@ function locate() {
   const btn = $('#near');
   if (origin) {
     origin = null;
-    btn.textContent = '📍 내 주변 순으로';
+    btn.textContent = '내 주변 순으로';
     btn.setAttribute('aria-pressed', 'false');
     render({ fit: true });
     return;
@@ -261,16 +259,16 @@ function locate() {
     alert('이 브라우저에서는 위치를 사용할 수 없어요.');
     return;
   }
-  btn.textContent = '📍 위치 찾는 중…';
+  btn.textContent = '위치 찾는 중…';
   navigator.geolocation.getCurrentPosition(
     (pos) => {
       origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      btn.textContent = '📍 가까운 순 해제';
+      btn.textContent = '가까운 순 해제';
       btn.setAttribute('aria-pressed', 'true');
       render({ fit: true });
     },
     () => {
-      btn.textContent = '📍 내 주변 순으로';
+      btn.textContent = '내 주변 순으로';
       alert('위치를 가져오지 못했어요. 브라우저의 위치 권한을 확인해 주세요.');
     },
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
