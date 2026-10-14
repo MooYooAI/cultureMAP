@@ -111,6 +111,7 @@ ${list}
   </section>
   <section class="map-pane" aria-label="행사 지도">
     <div id="map"></div>
+    <div id="wx-map" class="wx-map" aria-live="polite" hidden></div>
   </section>
   <aside class="ad-pane" aria-label="광고">
     <div class="ad-slot ad-tall"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 600</small></p></div>

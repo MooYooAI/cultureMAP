@@ -30,7 +30,8 @@ function ticketStub(e, status) {
   return `<div class="stub" aria-hidden="true"><span class="stub-m">${m}월</span><span class="stub-d">${d}</span><span class="stub-w">${dow} ${upcoming ? '시작' : '마감'}</span></div>`;
 }
 
-export function renderCard(e, { root = './', today, origin = null } = {}) {
+// wx: 브라우저에서 날씨를 받은 뒤 붙이는 그날 날씨 표시(HTML). 빌드 때는 없다.
+export function renderCard(e, { root = './', today, origin = null, wx = '' } = {}) {
   const status = eventStatus(e, today);
   const dist =
     origin && hasLocation(e) ? `<span class="dist">${distanceKm(origin, e).toFixed(1)}km</span>` : '';
@@ -48,6 +49,10 @@ export function renderCard(e, { root = './', today, origin = null } = {}) {
     <p class="card-date">${esc(formatRange(e.startDate, e.endDate))}${e.time ? ` · ${esc(e.time)}` : ''}</p>
     <p class="card-place">${esc(placeLabel(e))}</p>
   </div>
-  ${hasLocation(e) ? `<button type="button" class="map-btn" aria-label="${esc(e.title)} 지도에서 보기">지도</button>` : ''}
+  ${side(wx, hasLocation(e) ? `<button type="button" class="map-btn" aria-label="${esc(e.title)} 지도에서 보기">지도</button>` : '')}
 </li>`;
+}
+
+function side(wx, btn) {
+  return wx ? `<div class="card-side">${wx}${btn}</div>` : btn;
 }

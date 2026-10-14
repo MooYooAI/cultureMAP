@@ -1,7 +1,8 @@
 // 지도+목록 화면. 데이터는 빌드 때 만든 data/events.json 하나만 읽는다(앱으로 확장할 때도 같은 JSON을 쓰면 된다).
-import { filterEvents, sortEvents, todayInSeoul, hasLocation, formatRange, CATEGORIES } from './lib/events.js';
+import { filterEvents, sortEvents, todayInSeoul, hasLocation, formatRange, periodRange, distanceKm, CATEGORIES } from './lib/events.js';
 import { renderCard, esc, eventPath, placeLabel } from './lib/render.js';
-import { REGION_BY_SLUG } from './lib/regions.js';
+import { REGIONS, REGION_BY_SLUG } from './lib/regions.js';
+import { loadWeather, describe, outingTip } from './lib/weather.js';
 import { addBaseTiles } from './lib/tiles.js';
 
 const root = document.body.dataset.root || './';
@@ -15,6 +16,7 @@ let origin = null;
 let map = null;
 let cluster = null;
 const markers = new Map();
+let weather = null;
 
 function readState() {
   const p = new URLSearchParams(location.search);
@@ -61,9 +63,10 @@ function render({ fit = false } = {}) {
   const place = state.region ? REGION_BY_SLUG[state.region]?.name : '전국';
   $('#heading').textContent = `${place} 축제·공연·전시 일정`;
   $('#count').textContent = `${list.length}개 행사${origin ? ' · 가까운 순' : ''}`;
-  $('#list').innerHTML = list.map((e) => renderCard(e, { root, today, origin })).join('');
+  $('#list').innerHTML = list.map((e) => renderCard(e, { root, today, origin, wx: wxChip(e) })).join('');
   $('#empty').hidden = list.length > 0;
   renderMarkers(list, fit);
+  renderMapWeather();
   writeState();
 }
 
@@ -82,6 +85,7 @@ function ensureMap() {
   });
   map.addLayer(cluster);
   map.on('zoomstart', unhighlight);
+  map.on('moveend', renderMapWeather);
   return map;
 }
 
@@ -184,6 +188,75 @@ function setView(view, rerender = true) {
   if (rerender) writeState();
 }
 
+// ---- 날씨: 일정 카드마다 가는 날 날씨, 지도 위에는 보고 있는 지역의 주말 날씨 ----
+
+const DOW = ['일', '월', '화', '수', '목', '금', '토'];
+const dowOf = (key) => DOW[new Date(`${key}T00:00:00Z`).getUTCDay()];
+
+// 갈 수 있는 첫날: 오늘·시작일·고른 기간의 첫날 중 가장 늦은 날. 예보(16일) 밖이면 표시하지 않는다.
+function visitDay(e) {
+  const from = periodRange(state.period, today)?.from || today;
+  return [today, from, e.startDate].sort().pop();
+}
+
+function wxChip(e) {
+  const date = visitDay(e);
+  if (!weather || date > e.endDate) return '';
+  const d = weather[e.region]?.days[date];
+  if (!d) return '';
+  const { icon, label } = describe(d.code);
+  const when = date === today ? '오늘' : dowOf(date);
+  const wet = d.rain >= 50 ? ' is-wet' : '';
+  return `<span class="wx-tag${wet}" title="${when} ${label}, ${d.max}° / ${d.min}°${d.rain == null ? '' : `, 비 ${d.rain}%`}">${when} ${icon} ${d.max}°</span>`;
+}
+
+// 지역을 골랐으면 그 지역, 지도를 확대해 보고 있으면 가운데와 가장 가까운 시·도, 전국을 보고 있으면 내 위치 근처(없으면 서울).
+function mapRegion() {
+  if (state.region) return { r: REGION_BY_SLUG[state.region], hint: false };
+  const near = (p) => REGIONS.reduce((a, b) => (distanceKm(p, b) < distanceKm(p, a) ? b : a));
+  if (map && map.getZoom() >= 9) {
+    const c = map.getCenter();
+    return { r: near({ lat: c.lat, lng: c.lng }), hint: false };
+  }
+  return { r: origin ? near(origin) : REGION_BY_SLUG.seoul, hint: true };
+}
+
+function renderMapWeather() {
+  const box = $('#wx-map');
+  if (!weather) return;
+  const { r, hint } = mapRegion();
+  const w = weather[r.slug];
+  const wk = periodRange('weekend', today);
+  const keys = [...new Set([today, wk.from, wk.to])].filter((k) => w?.days[k]);
+  if (!keys.length) {
+    box.hidden = true;
+    return;
+  }
+  box.hidden = false;
+  // 한마디는 주말 중 비 올 확률이 높은 날 기준(주말 예보가 없으면 오늘)
+  const wkDays = [wk.from, wk.to].map((k) => w.days[k]).filter(Boolean);
+  const focus = wkDays.sort((a, b) => (b.rain ?? 0) - (a.rain ?? 0))[0] || w.days[today];
+  box.innerHTML = `<p class="wx-map-title">🌈 ${r.name} 나들이 날씨</p>
+<ol>${keys
+    .map((k) => {
+      const d = w.days[k];
+      const { icon, label } = describe(d.code);
+      const isWk = k >= wk.from && k <= wk.to;
+      return `<li class="${isWk ? 'is-weekend' : ''}"><span class="wx-map-day">${k === today ? '오늘' : `${dowOf(k)}요일`}</span><span class="wx-map-ico" title="${label}">${icon}</span><b>${d.max}°</b><small>${d.min}°</small>${d.rain >= 30 ? `<small class="wx-map-rain">☔ ${d.rain}%</small>` : ''}</li>`;
+    })
+    .join('')}</ol>
+<p class="wx-map-tip">${outingTip(focus)}</p>${hint ? '<p class="wx-map-hint">지도를 확대하면 그 지역 날씨로 바뀌어요</p>' : ''}`;
+}
+
+async function initWeather() {
+  try {
+    weather = await loadWeather();
+  } catch {
+    return; // 날씨를 못 받아도 행사 화면은 그대로 둔다.
+  }
+  if (events.length) render();
+}
+
 // ---- 이벤트 연결 ----
 
 function bindChips(id, key) {
@@ -280,6 +353,7 @@ function locate() {
 async function init() {
   syncControls();
   bind();
+  initWeather();
   try {
     const res = await fetch(`${root}data/events.json`);
     events = (await res.json()).events;
