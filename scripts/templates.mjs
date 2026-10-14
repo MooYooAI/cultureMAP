@@ -56,6 +56,7 @@ function footer({ root, sources }) {
   </nav>
   ${notes.map((n) => `<p class="attribution">${esc(n)}</p>`).join('\n  ')}
   <p class="attribution">지도: &copy; OpenStreetMap contributors</p>
+  <p class="attribution">날씨: <a href="https://open-meteo.com/" rel="noopener">Open-Meteo.com</a> (CC BY 4.0)</p>
 </footer>`;
 }
 
@@ -110,6 +111,7 @@ ${list}
   </section>
   <section class="map-pane" aria-label="행사 지도">
     <div id="map"></div>
+    <div id="wx-map" class="wx-map" aria-live="polite" hidden></div>
   </section>
   <aside class="ad-pane" aria-label="광고">
     <div class="ad-slot ad-tall"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 600</small></p></div>
