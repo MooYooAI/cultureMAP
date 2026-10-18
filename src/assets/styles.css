@@ -145,7 +145,7 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 .card-title { margin: 4px 0 2px; font-family: var(--font-cute); font-weight: 400; font-size: 17px; line-height: 1.35; }
 .card-title a { text-decoration: none; }
 .card-title a::after { content: ''; position: absolute; inset: 0; } /* 카드 전체를 눌러 상세로 */
-.card-date, .card-place { margin: 0; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card-date, .card-place { margin: 0; font-size: 13px; color: var(--muted); word-break: keep-all; overflow-wrap: anywhere; } /* 기간·장소는 자르지 않고 줄을 바꿔 다 보여 준다 */
 .card-date { color: var(--text); }
 .map-btn {
   position: relative; z-index: 1; align-self: center; flex: 0 0 auto;
