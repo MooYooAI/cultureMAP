@@ -3,6 +3,7 @@ import config from '../site.config.mjs';
 import { esc, renderCard, eventPath, placeLabel } from '../src/assets/lib/render.js';
 import { CATEGORIES, PERIODS, formatRange, hasLocation, eventStatus } from '../src/assets/lib/events.js';
 import { REGIONS, REGION_BY_SLUG } from '../src/assets/lib/regions.js';
+import { renderHot } from '../src/assets/lib/hot.js';
 
 function abs(path) {
   return `${config.siteUrl}/${path}`;
@@ -68,7 +69,7 @@ function chips(id, label, entries, allLabel) {
 }
 
 // 첫 화면과 지역별 페이지가 같이 쓰는 지도+목록 화면.
-export function appPage({ root, path, region, events, today, sources, noindex }) {
+export function appPage({ root, path, region, events, hot = [], today, sources, noindex }) {
   const r = region ? REGION_BY_SLUG[region] : null;
   const place = r ? r.name : '전국';
   const heading = `${place} 축제·공연·전시 일정`;
@@ -76,6 +77,7 @@ export function appPage({ root, path, region, events, today, sources, noindex })
     ? `${r.fullName}에서 열리는 축제, 공연, 전시 일정을 지도와 목록으로 확인하세요. 이번 주말 ${r.name}에서 갈 만한 행사, 무료 행사도 찾을 수 있어요.`
     : config.description;
   const list = events.slice(0, 60).map((e) => renderCard(e, { root, today })).join('\n');
+  // 검색창 옆에 기간·종류 버튼을 한 줄로 둔다(좁은 화면에서는 버튼 줄이 옆으로 넘어간다).
   const body = `<section class="filters" aria-label="검색 조건">
   <div class="search-row">
     <input type="search" id="q" placeholder="행사 이름, 장소로 검색" aria-label="행사 검색" enterkeyhint="search" autocomplete="off">
@@ -84,13 +86,15 @@ export function appPage({ root, path, region, events, today, sources, noindex })
       ${REGIONS.map((x) => `<option value="${x.slug}"${x.slug === region ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
     </select>
   </div>
-  ${chips('period', '기간', Object.entries(PERIODS))}
-  <div class="chips-row">
+  <div class="filter-bar">
+    ${chips('period', '기간', Object.entries(PERIODS))}
+    <span class="filter-sep" aria-hidden="true"></span>
     ${chips('category', '종류', Object.entries(CATEGORIES), '모든 종류')}
-  </div>
-  <div class="extra-row">
-    <label class="toggle"><input type="checkbox" id="free"> 무료만</label>
-    <button type="button" id="near" class="link-btn">📍 내 주변 순으로</button>
+    <span class="filter-sep" aria-hidden="true"></span>
+    <span class="filter-extra">
+      <label class="toggle"><input type="checkbox" id="free"> 무료만</label>
+      <button type="button" id="near" class="link-btn">📍 내 주변 순으로</button>
+    </span>
   </div>
 </section>
 <div class="view-toggle" role="tablist" aria-label="보기 방식">
@@ -101,6 +105,10 @@ export function appPage({ root, path, region, events, today, sources, noindex })
   <section class="list-pane" aria-labelledby="heading">
     <h1 id="heading">${esc(heading)}</h1>
     <p id="count" class="count" aria-live="polite">${events.length}개 행사</p>
+    <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
+      <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">네이버 검색량 · 최근 7일</span></header>
+      <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
+    </section>
     <div id="wx-strip" class="wx-strip" hidden></div>
     <ul id="list" class="cards">
 ${list}

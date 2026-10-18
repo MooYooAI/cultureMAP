@@ -21,6 +21,8 @@ test('빌드 결과물', async () => {
   assert.match(index, /class="card"/, '검색엔진용으로 목록을 미리 그려 둔다');
   assert.match(index, /noindex/, '샘플 데이터는 검색 제외');
   assert.doesNotMatch(index, /서울세계불꽃축제/, '끝난 행사는 첫 화면 목록에서 빠진다');
+  assert.match(index, /<section id="hot" class="hot"[^>]*hidden>/, '검색량 키가 없으면 인기 축제 줄을 숨긴다');
+  assert.match(index, /<div class="filter-bar">[\s\S]*id="period"[\s\S]*id="category"[\s\S]*id="free"/);
 
   const seoul = await read('region/seoul/index.html');
   assert.match(seoul, /서울 축제·공연·전시 일정/);
