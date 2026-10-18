@@ -96,3 +96,33 @@ test('두 번 이스케이프된 제목도 원래 글자로 푼다', () => {
   assert.equal(cleanText('&#39;가을&#x27;'), "'가을'");
   assert.equal(cleanText('A &unknown; B'), 'A &unknown; B');
 });
+
+test('관광공사 소개정보로 시간·요금을 채우고, 받은 건 다시 부르지 않는다', async () => {
+  const { mkdtemp } = await import('node:fs/promises');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const cacheFile = join(await mkdtemp(join(tmpdir(), 'tour-')), 'detail.json');
+  const ev = (id) => ({ source: { id }, time: '', price: '', isFree: false });
+  const origFetch = globalThis.fetch;
+  const calls = [];
+  globalThis.fetch = async (url) => {
+    const id = new URL(url).searchParams.get('contentId');
+    calls.push(id);
+    const item = id === '1' ? { playtime: '10:00~18:00<br>야간 19:00~22:00', usetimefestival: '무료' } : { playtime: '', usetimefestival: '성인 5,000원' };
+    return new Response(JSON.stringify({ response: { header: { resultCode: '0000' }, body: { items: { item: [item] } } } }));
+  };
+  try {
+    const a = await tourapi.addDetails([ev('1'), ev('2'), ev('3')], { key: 'k', cacheFile, budget: 2, log: quiet });
+    assert.deepEqual(calls, ['1', '2']);
+    assert.equal(a[0].time, '10:00~18:00 / 야간 19:00~22:00');
+    assert.equal(a[0].isFree, true);
+    assert.equal(a[1].price, '성인 5,000원');
+    assert.equal(a[2].time, '');
+    calls.length = 0;
+    const b = await tourapi.addDetails([ev('1'), ev('2'), ev('3')], { key: 'k', cacheFile, budget: 2, log: quiet });
+    assert.deepEqual(calls, ['3'], '저장된 행사는 다시 부르지 않음');
+    assert.equal(b[0].time, '10:00~18:00 / 야간 19:00~22:00');
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});
