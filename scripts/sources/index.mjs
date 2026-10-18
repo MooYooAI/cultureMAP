@@ -26,7 +26,7 @@ export async function loadAllEvents({ today, env = process.env, log = console })
   } else {
     for (const s of active) {
       try {
-        const got = await s.load({ key: env[s.envKey], from, to });
+        const got = await s.load({ key: env[s.envKey], from, to, log });
         log.log(`[data] ${s.name}: ${got.length}건`);
         events.push(...got);
         used.push(s.name);
