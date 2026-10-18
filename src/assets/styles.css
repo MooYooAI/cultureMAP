@@ -134,7 +134,7 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 .stub-col .map-btn { align-self: stretch; height: 30px; padding: 0; }
 /* 오른쪽 사진: 카드 높이를 꽉 채운다 */
 .photo {
-  position: relative; flex: 0 0 96px; margin: -12px -12px -12px 0; overflow: hidden;
+  position: relative; flex: 0 0 84px; margin: -12px -12px -12px 0; overflow: hidden;
   background: #fdf2f8; border-left: 2px solid var(--line);
 }
 .photo::before { content: ''; position: absolute; inset: -16px; background: var(--img) center / cover; filter: blur(14px) saturate(1.2); opacity: .75; }
@@ -147,6 +147,7 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 .card-title a::after { content: ''; position: absolute; inset: 0; } /* 카드 전체를 눌러 상세로 */
 .card-date, .card-place { margin: 0; font-size: 13px; color: var(--muted); word-break: keep-all; overflow-wrap: anywhere; } /* 기간·장소는 자르지 않고 줄을 바꿔 다 보여 준다 */
 .card-date { color: var(--text); }
+.card-range { white-space: nowrap; letter-spacing: -.3px; } /* 기간은 한 줄로 */
 .map-btn {
   position: relative; z-index: 1; align-self: center; flex: 0 0 auto;
   border: 0; background: var(--brand-soft); color: var(--brand-strong); border-radius: 999px; height: 34px; padding: 0 12px; cursor: pointer; font-size: 13px; font-weight: 700;
