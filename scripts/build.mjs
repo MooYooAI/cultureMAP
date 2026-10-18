@@ -5,10 +5,12 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import config from '../site.config.mjs';
 import { loadAllEvents } from './sources/index.mjs';
+import { loadHotFestivals } from './trends.mjs';
 import { appPage, eventPage, notFoundPage } from './templates.mjs';
 import { todayInSeoul, sortEvents, filterEvents } from '../src/assets/lib/events.js';
 import { REGIONS } from '../src/assets/lib/regions.js';
 import { eventPath } from '../src/assets/lib/render.js';
+import { pickHot } from '../src/assets/lib/hot.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = path.join(ROOT, 'dist');
@@ -31,8 +33,15 @@ async function copyVendor() {
   }
 }
 
-export async function build({ today = process.env.BUILD_TODAY || todayInSeoul() } = {}) {
-  const { events, sources } = await loadAllEvents({ today });
+export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(), env = process.env, fetchImpl } = {}) {
+  const { events, sources } = await loadAllEvents({ today, env });
+  // 지금 많이 찾는 축제(최근 7일 다음 블로그 글 수). 키가 없으면 빈 목록이라 화면에서 줄이 숨는다.
+  const hot = await loadHotFestivals({ events, today, env, ...(fetchImpl ? { fetchImpl } : {}) });
+  if (hot.length) {
+    sources.push('trend');
+    const byId = new Map(events.map((e) => [e.id, e]));
+    console.log(`[trend] 상위: ${hot.slice(0, 10).map((h) => `${byId.get(h.id)?.title}(${h.score})`).join(', ')}`);
+  }
   // 샘플 데이터로 만든 사이트는 검색엔진에 올리지 않는다(가짜 일정이 검색에 잡히지 않게).
   const noindex = sources.includes('sample');
   const upcoming = sortEvents(filterEvents(events, {}, today), today);
@@ -43,15 +52,24 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul() 
 
   await write(
     'data/events.json',
-    JSON.stringify({ generatedAt: new Date().toISOString(), today, sources, events }),
+    JSON.stringify({ generatedAt: new Date().toISOString(), today, sources, events, hot }),
   );
 
-  await write('index.html', appPage({ root: './', path: '', events: upcoming, today, sources, noindex }));
+  await write('index.html', appPage({ root: './', path: '', events: upcoming, hot: pickHot(hot, events, { today }), today, sources, noindex }));
   for (const r of REGIONS) {
     const list = upcoming.filter((e) => e.region === r.slug);
     await write(
       `region/${r.slug}/index.html`,
-      appPage({ root: '../../', path: `region/${r.slug}/`, region: r.slug, events: list, today, sources, noindex }),
+      appPage({
+        root: '../../',
+        path: `region/${r.slug}/`,
+        region: r.slug,
+        events: list,
+        hot: pickHot(hot, events, { region: r.slug, today }),
+        today,
+        sources,
+        noindex,
+      }),
     );
   }
   for (const e of events) {
@@ -95,7 +113,7 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul() 
   await write('.nojekyll', '');
 
   console.log(`[build] ${events.length}개 행사, 출처: ${sources.join(', ')}${noindex ? ' (noindex)' : ''} → dist/`);
-  return { events, sources, noindex };
+  return { events, sources, noindex, hot };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

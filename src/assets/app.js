@@ -4,6 +4,7 @@ import { renderCard, esc, eventPath, placeLabel } from './lib/render.js';
 import { REGIONS, REGION_BY_SLUG } from './lib/regions.js';
 import { loadWeather, describe, outingTip } from './lib/weather.js';
 import { addBaseTiles } from './lib/tiles.js';
+import { pickHot, renderHot } from './lib/hot.js';
 
 const root = document.body.dataset.root || './';
 const presetRegion = document.body.dataset.presetRegion || '';
@@ -12,6 +13,7 @@ const $ = (sel) => document.querySelector(sel);
 const today = todayInSeoul();
 const state = readState();
 let events = [];
+let hot = [];
 let origin = null;
 let map = null;
 let cluster = null;
@@ -66,8 +68,17 @@ function render({ fit = false } = {}) {
   $('#list').innerHTML = list.map((e) => renderCard(e, { root, today, origin })).join('');
   $('#empty').hidden = list.length > 0;
   renderMarkers(list, fit);
+  renderHotList();
   renderWeather();
   writeState();
+}
+
+// ---- 지금 많이 찾는 축제 (지역을 고르면 그 지역 것만) ----
+
+function renderHotList() {
+  const list = pickHot(hot, events, { region: state.region, today });
+  $('#hot').hidden = list.length === 0;
+  $('#hot-list').innerHTML = renderHot(list, { root, today });
 }
 
 // ---- 지도 ----
@@ -359,7 +370,9 @@ async function init() {
   initWeather();
   try {
     const res = await fetch(`${root}data/events.json`);
-    events = (await res.json()).events;
+    const data = await res.json();
+    events = data.events;
+    hot = data.hot || [];
   } catch {
     $('#count').textContent = '행사 정보를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.';
     return;
