@@ -36,18 +36,21 @@ export function renderCard(e, { root = './', today, origin = null } = {}) {
     origin && hasLocation(e) ? `<span class="dist">${distanceKm(origin, e).toFixed(1)}km</span>` : '';
   const free = e.isFree ? '<span class="badge free">무료</span>' : '';
   const noMap = hasLocation(e) ? '' : '<span class="badge muted">지도 위치 없음</span>';
-  const thumb = e.image?.url
-    ? `<img class="thumb" src="${esc(e.image.url)}" alt="" loading="lazy" decoding="async">`
+  // 사진은 카드 오른쪽 높이를 꽉 채운다. 공공누리 제3유형(변경금지) 사진은 자르지 않고, 남는 자리는 같은 사진을 흐리게 깔아 메운다.
+  const photo = e.image?.url
+    ? `<div class="photo" style="--img:url(&quot;${esc(e.image.url.replace(/"/g, '%22'))}&quot;)"><img src="${esc(e.image.url)}" alt="" loading="lazy" decoding="async"></div>`
+    : `<div class="photo photo-none thumb-${esc(e.category)}" aria-hidden="true"></div>`;
+  const mapBtn = hasLocation(e)
+    ? `<button type="button" class="map-btn" aria-label="${esc(e.title)} 지도에서 보기">지도</button>`
     : '';
   return `<li class="card" data-id="${esc(e.id)}" data-cat="${esc(e.category)}">
-  ${ticketStub(e, status)}
-  ${thumb}
+  <div class="stub-col">${ticketStub(e, status)}${mapBtn}</div>
   <div class="card-body">
     <div class="card-tags"><span class="badge cat-${esc(e.category)}">${esc(CATEGORIES[e.category] || '')}</span><span class="badge status-${status.key}">${esc(status.label)}</span>${free}${noMap}${dist}</div>
     <h2 class="card-title"><a href="${root}${eventPath(e)}">${esc(e.title)}</a></h2>
     <p class="card-date">${esc(formatRange(e.startDate, e.endDate))}${e.time ? ` · ${esc(e.time)}` : ''}</p>
     <p class="card-place">${esc(placeLabel(e))}</p>
   </div>
-  ${hasLocation(e) ? `<button type="button" class="map-btn" aria-label="${esc(e.title)} 지도에서 보기">지도</button>` : ''}
+  ${photo}
 </li>`;
 }
