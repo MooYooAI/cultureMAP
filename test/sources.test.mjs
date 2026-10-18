@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import * as tourapi from '../scripts/sources/tourapi.mjs';
 import * as kopis from '../scripts/sources/kopis.mjs';
 import * as culture from '../scripts/sources/culture.mjs';
-import { parseXmlItems, dedupeEvents, isFreeText } from '../scripts/sources/common.mjs';
+import { parseXmlItems, dedupeEvents, isFreeText, cleanText } from '../scripts/sources/common.mjs';
 import { validateEvents } from '../scripts/validate.mjs';
 import { loadAllEvents } from '../scripts/sources/index.mjs';
 
@@ -87,4 +87,12 @@ test('한 출처가 실패해도 다른 출처로 계속', async () => {
     globalThis.fetch = origFetch;
   }
   assert.equal(kopis.load, realLoad);
+});
+
+test('두 번 이스케이프된 제목도 원래 글자로 푼다', () => {
+  assert.equal(cleanText('연극 &amp;lt;그녀를 믿지마세요&amp;gt;'), '연극 <그녀를 믿지마세요>');
+  assert.equal(cleanText('&quot;Birth &ndash;Death&quot;'), '"Birth –Death"');
+  assert.equal(cleanText('파보 예르비 &amp;amp; 에스토니안'), '파보 예르비 & 에스토니안');
+  assert.equal(cleanText('&#39;가을&#x27;'), "'가을'");
+  assert.equal(cleanText('A &unknown; B'), 'A &unknown; B');
 });

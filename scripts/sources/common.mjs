@@ -35,13 +35,23 @@ export function cleanText(raw) {
   return decodeEntities(noTags).replace(/[ \t]+/g, ' ').trim();
 }
 
+const NAMED = { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&', nbsp: ' ', ndash: '–', mdash: '—', middot: '·', hellip: '…', lsquo: '‘', rsquo: '’', ldquo: '“', rdquo: '”' };
+
+// 공공데이터 응답은 "&amp;lt;"처럼 두 번 이스케이프된 경우가 있어, 더 바뀌지 않을 때까지 여러 번 푼다.
 export function decodeEntities(s) {
-  return s
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;|&apos;/g, "'")
-    .replace(/&amp;/g, '&');
+  let prev;
+  let out = String(s);
+  for (let i = 0; i < 3 && out !== prev; i++) {
+    prev = out;
+    out = out.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, name) => {
+      if (name[0] === '#') {
+        const code = name[1] === 'x' || name[1] === 'X' ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
+        return Number.isFinite(code) && code > 0 && code <= 0x10ffff ? String.fromCodePoint(code) : m;
+      }
+      return NAMED[name.toLowerCase()] ?? m;
+    });
+  }
+  return out;
 }
 
 export function isFreeText(price) {
