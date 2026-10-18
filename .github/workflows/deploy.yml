@@ -34,9 +34,9 @@ jobs:
           TOURAPI_KEY: ${{ secrets.TOURAPI_KEY }}
           KOPIS_KEY: ${{ secrets.KOPIS_KEY }}
           CULTURE_KEY: ${{ secrets.CULTURE_KEY }}
-          # "지금 많이 찾는 축제": NAVER API HUB 검색어 트렌드 키. 없으면 그 줄만 숨는다.
-          NAVER_API_KEY_ID: ${{ secrets.NAVER_API_KEY_ID }}
-          NAVER_API_KEY: ${{ secrets.NAVER_API_KEY }}
+          # "지금 많이 찾는 축제": 네이버 개발자센터 검색 API 키. 없으면 그 줄만 숨는다.
+          NAVER_CLIENT_ID: ${{ secrets.NAVER_CLIENT_ID }}
+          NAVER_CLIENT_SECRET: ${{ secrets.NAVER_CLIENT_SECRET }}
           SITE_URL: ${{ vars.SITE_URL }}
       - uses: actions/upload-pages-artifact@v3
         if: github.event_name != 'pull_request'

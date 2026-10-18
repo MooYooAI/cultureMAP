@@ -28,38 +28,36 @@ test('키가 없으면 부르지 않는다', async () => {
   assert.deepEqual(hot, []);
 });
 
-test('요청마다 기준 축제를 넣어 점수를 이어 붙인다', async () => {
-  // 실제 검색량(가상): 1번이 가장 많고, 7번은 1번의 2배.
-  const volume = { f1: 50, f2: 10, f3: 5, f4: 0, f5: 20, f6: 30, f7: 100, f8: 1, f9: 0 };
-  const events = Object.keys(volume).map((id, i) => fest(id, `${id} 축제`, '2026-10-10', `2026-10-2${i}`));
-  const bodies = [];
-  const fetchImpl = async (url, opts) => {
-    const body = JSON.parse(opts.body);
-    bodies.push(body);
-    assert.equal(opts.headers['X-NCP-APIGW-API-KEY-ID'], 'id');
-    assert.equal(body.startDate, '2026-10-11');
-    assert.equal(body.endDate, '2026-10-17');
-    assert.ok(body.keywordGroups.length <= 5);
-    const max = Math.max(...body.keywordGroups.map((g) => volume[g.groupName]));
-    return {
-      ok: true,
-      json: async () => ({
-        results: body.keywordGroups.map((g) => ({ title: g.groupName, data: [{ ratio: (volume[g.groupName] / max) * 100 }] })),
-      }),
-    };
+test('최근 7일 블로그 글 수로 순위를 매긴다', async () => {
+  const events = [fest('a', '제3회 가나 축제', '2026-10-10', '2026-10-20'), fest('b', '다라축제', '2026-10-15', '2026-10-25'), fest('c', '마바 축제', '2026-10-16', '2026-10-26')];
+  const post = (title, postdate) => ({ title, description: '', postdate });
+  // 가나 축제: 최근 글 150개(두 쪽) + 오래된 글. 다라축제: 최근 2개 중 하나는 이름이 없는 글. 마바 축제: 오래된 글만.
+  const pages = {
+    '가나 축제': [
+      Array.from({ length: 100 }, () => post('<b>가나</b> 축제 다녀옴', '20261017')),
+      [...Array.from({ length: 50 }, () => post('가나축제 후기', '20261012')), post('가나 축제', '20261001')],
+    ],
+    다라축제: [[post('다라 축제 일정', '20261016'), post('주말 나들이', '20261015'), post('다라축제', '20260901')]],
+    '마바 축제': [[post('마바 축제', '20260920')]],
   };
-  const hot = await loadHotFestivals({ events, today: '2026-10-18', env: { NAVER_API_KEY_ID: 'id', NAVER_API_KEY: 'k' }, fetchImpl, log: quiet });
-  assert.equal(bodies.length, 2); // 첫 요청 5개, 다음 요청은 기준 + 4개
-  assert.ok(bodies.slice(1).every((b) => b.keywordGroups[0].groupName === 'f1'));
-  assert.deepEqual(hot.map((h) => h.id), ['f7', 'f1', 'f6', 'f5', 'f2', 'f3', 'f8']);
-  assert.equal(hot[0].score, 100);
-  assert.equal(hot[1].score, 50);
+  const calls = [];
+  const fetchImpl = async (url, opts) => {
+    const u = new URL(url);
+    calls.push(u.searchParams.get('query'));
+    assert.equal(opts.headers['X-Naver-Client-Id'], 'id');
+    assert.equal(u.searchParams.get('sort'), 'date');
+    const page = (Number(u.searchParams.get('start')) - 1) / 100;
+    return { ok: true, json: async () => ({ items: pages[u.searchParams.get('query')][page] || [] }) };
+  };
+  const hot = await loadHotFestivals({ events, today: '2026-10-18', env: { NAVER_CLIENT_ID: 'id', NAVER_CLIENT_SECRET: 's' }, fetchImpl, log: quiet });
+  assert.deepEqual(hot, [{ id: 'a', score: 150 }, { id: 'b', score: 1 }]);
+  assert.deepEqual(calls, ['가나 축제', '가나 축제', '다라축제', '마바 축제']);
 });
 
 test('API가 실패하면 빈 목록(빌드는 계속)', async () => {
   const events = [fest('a', '가 축제', '2026-10-10', '2026-10-20')];
   const fetchImpl = async () => ({ ok: false, status: 429, statusText: 'Too Many Requests' });
-  const hot = await loadHotFestivals({ events, today: '2026-10-18', env: { NAVER_API_KEY_ID: 'i', NAVER_API_KEY: 'k' }, fetchImpl, log: quiet });
+  const hot = await loadHotFestivals({ events, today: '2026-10-18', env: { NAVER_CLIENT_ID: 'i', NAVER_CLIENT_SECRET: 'k' }, fetchImpl, log: quiet });
   assert.deepEqual(hot, []);
 });
 
