@@ -37,7 +37,11 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
   const { events, sources } = await loadAllEvents({ today, env });
   // 지금 많이 찾는 축제(최근 7일 다음 블로그 글 수). 키가 없으면 빈 목록이라 화면에서 줄이 숨는다.
   const hot = await loadHotFestivals({ events, today, env, ...(fetchImpl ? { fetchImpl } : {}) });
-  if (hot.length) sources.push('trend');
+  if (hot.length) {
+    sources.push('trend');
+    const byId = new Map(events.map((e) => [e.id, e]));
+    console.log(`[trend] 상위: ${hot.slice(0, 10).map((h) => `${byId.get(h.id)?.title}(${h.score})`).join(', ')}`);
+  }
   // 샘플 데이터로 만든 사이트는 검색엔진에 올리지 않는다(가짜 일정이 검색에 잡히지 않게).
   const noindex = sources.includes('sample');
   const upcoming = sortEvents(filterEvents(events, {}, today), today);
