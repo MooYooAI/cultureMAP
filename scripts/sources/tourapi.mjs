@@ -105,7 +105,7 @@ export async function addDetails(events, { key, cacheFile = DETAIL_CACHE, budget
   }
   await mkdir(path.dirname(cacheFile), { recursive: true });
   await writeFile(cacheFile, JSON.stringify(cache));
-  log.log(`[data] tourapi 소개정보: ${got}건 새로 받음, ${events.filter((e) => cache[e.source.id]).length}/${events.length}건 보유`);
+  log.log(`[data] tourapi 소개정보: ${got}건 새로 받음, ${events.filter((e) => cache[e.source.id]).length}/${events.length}건 보유, 시간 있음 ${events.filter((e) => e.time).length}건`);
   return events;
 }
 
