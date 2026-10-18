@@ -1,5 +1,5 @@
 // "지금 많이 찾는 축제" 줄. 빌드 때 미리 그려 넣는 HTML과 브라우저 화면이 같은 함수를 쓴다.
-// hot: 빌드가 events.json에 넣어 둔 [{ id, score }] (score = 최근 7일 네이버 블로그 글 수).
+// hot: 빌드가 events.json에 넣어 둔 [{ id, score }] (score = 최근 7일 다음 블로그 글 수).
 import { eventStatus, formatRange } from './events.js';
 import { REGION_BY_SLUG } from './regions.js';
 import { esc, eventPath } from './render.js';

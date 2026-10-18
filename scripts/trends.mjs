@@ -1,13 +1,13 @@
-// "지금 많이 찾는 축제": 네이버 블로그에 최근 7일 동안 올라온 축제 글 수로 순위를 매긴다.
-// 키: developers.naver.com → Application 등록 → 사용 API "검색" 선택
-//      → 환경변수 NAVER_CLIENT_ID, NAVER_CLIENT_SECRET. 키가 없으면 이 기능은 꺼진다.
-// 한도: 검색 API 하루 25,000건. 축제 하나에 최신순 100개씩 최대 MAX_PAGES번 읽는다(대부분 1번).
+// "지금 많이 찾는 축제": 다음(카카오) 블로그 검색으로 최근 7일 동안 올라온 축제 글 수를 세어 순위를 매긴다.
+// 키: developers.kakao.com → 앱 만들기 → 앱 키의 "REST API 키" → 환경변수 KAKAO_REST_KEY.
+//      카드 등록 없이 쓰는 무료 API이고, 키가 없으면 이 기능은 꺼진다.
+// 한도: 블로그 검색 하루 30,000건. 축제 하나에 최신순 50개씩 최대 MAX_PAGES번 읽는다(대부분 1번).
 import { addDays } from '../src/assets/lib/events.js';
 
-const URL_DEFAULT = 'https://openapi.naver.com/v1/search/blog.json';
+const URL_DEFAULT = 'https://dapi.kakao.com/v2/search/blog';
 export const MAX_CANDIDATES = 300;
-export const MAX_PAGES = 3;
-const PAGE = 100;
+export const MAX_PAGES = 6;
+const PAGE = 50;
 
 // "제25회 안동국제탈춤페스티벌 2026 (안동)" → "안동국제탈춤페스티벌"
 export function searchKeyword(title) {
@@ -41,40 +41,39 @@ export function hotCandidates(events, today) {
 const compact = (s) => String(s || '').replace(/<[^>]*>/g, '').replace(/\s+/g, '');
 
 // 최신순으로 읽어 기간 안의 글만 센다. 제목·요약에 축제 이름(띄어쓰기 무시)이 들어간 글만 친다.
-async function countRecent({ keyword, since, id, secret, url, fetchImpl }) {
+async function countRecent({ keyword, since, key, url, fetchImpl }) {
   const name = compact(keyword);
   let count = 0;
-  for (let page = 0; page < MAX_PAGES; page++) {
-    const params = new URLSearchParams({ query: keyword, display: String(PAGE), start: String(page * PAGE + 1), sort: 'date' });
-    const res = await fetchImpl(`${url}?${params}`, {
-      headers: { 'X-Naver-Client-Id': id, 'X-Naver-Client-Secret': secret },
-    });
+  for (let page = 1; page <= MAX_PAGES; page++) {
+    const params = new URLSearchParams({ query: keyword, sort: 'recency', size: String(PAGE), page: String(page) });
+    const res = await fetchImpl(`${url}?${params}`, { headers: { Authorization: `KakaoAK ${key}` } });
     if (!res.ok) throw new Error(`블로그 검색 ${res.status} ${res.statusText}`);
-    const items = (await res.json()).items || [];
+    const body = await res.json();
+    const docs = body.documents || [];
     let older = false;
-    for (const it of items) {
-      if (String(it.postdate || '') < since) {
+    for (const d of docs) {
+      // datetime: '2026-10-17T12:30:00.000+09:00'
+      if (String(d.datetime || '').slice(0, 10) < since) {
         older = true;
         break;
       }
-      if (compact(it.title).includes(name) || compact(it.description).includes(name)) count++;
+      if (compact(d.title).includes(name) || compact(d.contents).includes(name)) count++;
     }
-    if (older || items.length < PAGE) break;
+    if (older || body.meta?.is_end || docs.length < PAGE) break;
   }
   return count;
 }
 
 // 돌려주는 값: [{ id, score }] 글 많은 순. score는 최근 7일 블로그 글 수.
 export async function loadHotFestivals({ events, today, env = process.env, fetchImpl = fetch, log = console }) {
-  const id = env.NAVER_CLIENT_ID;
-  const secret = env.NAVER_CLIENT_SECRET;
-  if (!id || !secret) return [];
-  const url = env.NAVER_BLOG_URL || URL_DEFAULT;
-  const since = addDays(today, -7).replace(/-/g, '');
+  const key = env.KAKAO_REST_KEY;
+  if (!key) return [];
+  const url = env.KAKAO_BLOG_URL || URL_DEFAULT;
+  const since = addDays(today, -7);
   const scores = [];
   try {
     for (const c of hotCandidates(events, today)) {
-      const n = await countRecent({ keyword: c.keyword, since, id, secret, url, fetchImpl });
+      const n = await countRecent({ keyword: c.keyword, since, key, url, fetchImpl });
       if (n > 0) scores.push({ id: c.id, score: n });
     }
   } catch (err) {

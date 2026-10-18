@@ -41,17 +41,17 @@ npm run serve     # http://localhost:8080/-/
 
 ### 지금 많이 찾는 축제
 
-`scripts/trends.mjs`가 진행 중이거나 30일 안에 시작하는 축제마다 네이버 블로그를 최신순으로 검색해, 최근 7일 동안 올라온 글(제목·요약에 축제 이름이 들어간 것) 수를 세어 `data/events.json`의 `hot`에 넣습니다. 목록 위에 1~10위가 나오고, 지역을 고르면 그 지역 것만 보입니다.
+`scripts/trends.mjs`가 진행 중이거나 30일 안에 시작하는 축제마다 다음(카카오) 블로그 검색을 최신순으로 읽어, 최근 7일 동안 올라온 글(제목·요약에 축제 이름이 들어간 것) 수를 세어 `data/events.json`의 `hot`에 넣습니다. 목록 위에 1~10위가 나오고, 지역을 고르면 그 지역 것만 보입니다.
 
-- 키: developers.naver.com → Application 등록 → 사용 API "검색" → Client ID/Secret을 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET` 시크릿으로 넣습니다. 없거나 호출이 실패하면 그 줄만 숨고 빌드는 계속됩니다.
-- 축제 하나에 100개씩 최대 3번 읽습니다(대부분 1번). 한 번 빌드에 많아야 900회, 검색 API 하루 한도는 25,000건입니다.
+- 키: developers.kakao.com → 앱 만들기 → "REST API 키"를 `KAKAO_REST_KEY` 시크릿으로 넣습니다(카드 등록 없음). 없거나 호출이 실패하면 그 줄만 숨고 빌드는 계속됩니다.
+- 축제 하나에 50개씩 최대 6번 읽습니다(대부분 1번). 블로그 검색 하루 한도는 30,000건이고, 다음 검색은 유료 요금표에 없어 넘으면 호출만 막힙니다.
 - "김치축제"처럼 흔한 이름은 다른 지역 같은 이름 축제의 검색량이 섞일 수 있습니다.
 
 ## 배포 (GitHub Pages)
 
 1. 저장소 **Settings → Pages → Source**를 **GitHub Actions**로 바꿉니다.
 2. `main`에 병합하면 `.github/workflows/deploy.yml`이 테스트·빌드 후 배포합니다. 매일 06시·18시(한국 시간)에도 다시 빌드합니다.
-3. API 키는 **Settings → Secrets and variables → Actions**에 `TOURAPI_KEY`, `KOPIS_KEY`, `CULTURE_KEY`(인기 축제는 `NAVER_CLIENT_ID`, `NAVER_CLIENT_SECRET`)로 넣습니다. 코드나 저장소에는 넣지 마세요.
+3. API 키는 **Settings → Secrets and variables → Actions**에 `TOURAPI_KEY`, `KOPIS_KEY`, `CULTURE_KEY`(인기 축제는 `KAKAO_REST_KEY`)로 넣습니다. 코드나 저장소에는 넣지 마세요.
 4. 도메인을 연결하면 Actions 변수 `SITE_URL`(예: `https://example.kr`)을 설정합니다.
 
 샘플 데이터로 빌드한 사이트는 검색엔진에 올라가지 않도록 `noindex`가 붙습니다. 실제 데이터로 바뀌면 자동으로 빠집니다. 그때 구글 서치 콘솔과 네이버 서치어드바이저에 `sitemap.xml`을 등록하세요.

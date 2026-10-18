@@ -30,34 +30,34 @@ test('키가 없으면 부르지 않는다', async () => {
 
 test('최근 7일 블로그 글 수로 순위를 매긴다', async () => {
   const events = [fest('a', '제3회 가나 축제', '2026-10-10', '2026-10-20'), fest('b', '다라축제', '2026-10-15', '2026-10-25'), fest('c', '마바 축제', '2026-10-16', '2026-10-26')];
-  const post = (title, postdate) => ({ title, description: '', postdate });
-  // 가나 축제: 최근 글 150개(두 쪽) + 오래된 글. 다라축제: 최근 2개 중 하나는 이름이 없는 글. 마바 축제: 오래된 글만.
+  const post = (title, day) => ({ title, contents: '', datetime: `${day}T12:00:00.000+09:00` });
+  // 가나 축제: 최근 글 70개(두 쪽) + 오래된 글. 다라축제: 최근 2개 중 하나는 이름이 없는 글. 마바 축제: 오래된 글만.
   const pages = {
     '가나 축제': [
-      Array.from({ length: 100 }, () => post('<b>가나</b> 축제 다녀옴', '20261017')),
-      [...Array.from({ length: 50 }, () => post('가나축제 후기', '20261012')), post('가나 축제', '20261001')],
+      Array.from({ length: 50 }, () => post('<b>가나</b> 축제 다녀옴', '2026-10-17')),
+      [...Array.from({ length: 20 }, () => post('가나축제 후기', '2026-10-11')), post('가나 축제', '2026-10-01')],
     ],
-    다라축제: [[post('다라 축제 일정', '20261016'), post('주말 나들이', '20261015'), post('다라축제', '20260901')]],
-    '마바 축제': [[post('마바 축제', '20260920')]],
+    다라축제: [[post('다라 축제 일정', '2026-10-16'), post('주말 나들이', '2026-10-15'), post('다라축제', '2026-09-01')]],
+    '마바 축제': [[post('마바 축제', '2026-09-20')]],
   };
   const calls = [];
   const fetchImpl = async (url, opts) => {
     const u = new URL(url);
     calls.push(u.searchParams.get('query'));
-    assert.equal(opts.headers['X-Naver-Client-Id'], 'id');
-    assert.equal(u.searchParams.get('sort'), 'date');
-    const page = (Number(u.searchParams.get('start')) - 1) / 100;
-    return { ok: true, json: async () => ({ items: pages[u.searchParams.get('query')][page] || [] }) };
+    assert.equal(opts.headers.Authorization, 'KakaoAK key');
+    assert.equal(u.searchParams.get('sort'), 'recency');
+    const documents = pages[u.searchParams.get('query')][Number(u.searchParams.get('page')) - 1] || [];
+    return { ok: true, json: async () => ({ meta: { is_end: false }, documents }) };
   };
-  const hot = await loadHotFestivals({ events, today: '2026-10-18', env: { NAVER_CLIENT_ID: 'id', NAVER_CLIENT_SECRET: 's' }, fetchImpl, log: quiet });
-  assert.deepEqual(hot, [{ id: 'a', score: 150 }, { id: 'b', score: 1 }]);
+  const hot = await loadHotFestivals({ events, today: '2026-10-18', env: { KAKAO_REST_KEY: 'key' }, fetchImpl, log: quiet });
+  assert.deepEqual(hot, [{ id: 'a', score: 70 }, { id: 'b', score: 1 }]);
   assert.deepEqual(calls, ['가나 축제', '가나 축제', '다라축제', '마바 축제']);
 });
 
 test('API가 실패하면 빈 목록(빌드는 계속)', async () => {
   const events = [fest('a', '가 축제', '2026-10-10', '2026-10-20')];
   const fetchImpl = async () => ({ ok: false, status: 429, statusText: 'Too Many Requests' });
-  const hot = await loadHotFestivals({ events, today: '2026-10-18', env: { NAVER_CLIENT_ID: 'i', NAVER_CLIENT_SECRET: 'k' }, fetchImpl, log: quiet });
+  const hot = await loadHotFestivals({ events, today: '2026-10-18', env: { KAKAO_REST_KEY: 'k' }, fetchImpl, log: quiet });
   assert.deepEqual(hot, []);
 });
 
