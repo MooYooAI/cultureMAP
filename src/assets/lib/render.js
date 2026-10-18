@@ -21,6 +21,13 @@ export function placeLabel(e) {
   return `${region}${city} · ${e.venue}`;
 }
 
+// 카드의 기간은 한 줄에 들어가야 한다. 해를 넘기는 기간은 요일을 빼고 연도를 두 자리로 줄인다(26.11.28 ~ 27.1.31).
+function cardRange(e) {
+  if (e.startDate.slice(0, 4) === e.endDate.slice(0, 4)) return formatRange(e.startDate, e.endDate);
+  const short = (iso) => iso.slice(2).split('-').map(Number).join('.');
+  return `${short(e.startDate)} ~ ${short(e.endDate)}`;
+}
+
 // 티켓 왼쪽 날짜 칸: 시작 전이면 시작일, 진행 중이면 마지막 날을 크게 보여 준다.
 const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 function ticketStub(e, status) {
@@ -48,7 +55,7 @@ export function renderCard(e, { root = './', today, origin = null } = {}) {
   <div class="card-body">
     <div class="card-tags"><span class="badge cat-${esc(e.category)}">${esc(CATEGORIES[e.category] || '')}</span><span class="badge status-${status.key}">${esc(status.label)}</span>${free}${noMap}${dist}</div>
     <h2 class="card-title"><a href="${root}${eventPath(e)}">${esc(e.title)}</a></h2>
-    <p class="card-date">${esc(formatRange(e.startDate, e.endDate))}${e.time ? ` · ${esc(e.time)}` : ''}</p>
+    <p class="card-date"><span class="card-range">${esc(cardRange(e))}</span>${e.time ? ` · ${esc(e.time)}` : ''}</p>
     <p class="card-place">${esc(placeLabel(e))}</p>
   </div>
   ${photo}
