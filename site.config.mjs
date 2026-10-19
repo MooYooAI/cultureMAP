@@ -4,8 +4,8 @@ export default {
   tagline: '전국 축제·공연·전시 일정을 지도로 한눈에',
   description:
     '지금 전국 곳곳에서 열리는 축제, 공연, 전시 일정을 지역·날짜·종류별로 지도와 목록에서 찾아보세요. 이번 주말 갈 만한 곳, 내 주변 무료 행사까지.',
-  // GitHub Pages 프로젝트 사이트 주소(끝에 / 없이). 사이트맵·대표 주소(canonical)에 쓰인다.
-  siteUrl: (process.env.SITE_URL || 'https://mooyooai.github.io/cultureMAP').replace(/\/$/, ''),
+  // 사이트 주소(끝에 / 없이). 사이트맵·대표 주소(canonical)·404 페이지 경로에 쓰인다.
+  siteUrl: (process.env.SITE_URL || 'https://festanow.com').replace(/\/$/, ''),
   // 지도 타일: 키 없이 쓰는 OpenStreetMap. 산·숲 색은 styles.css에서 옅게 눌러 단순하게 보이게 한다.
   // (CARTO 타일은 실제 사이트에서 지도 대신 API 키 안내 문구가 떠서 쓰지 않는다.)
   // 트래픽이 커지면 VWorld·카카오 등 키가 있는 타일로 바꾸는 것을 권장(OSM 공용 서버 이용 정책).

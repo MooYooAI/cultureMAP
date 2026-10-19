@@ -1,6 +1,6 @@
 # 지역문화공연지도
 
-전국 축제·공연·전시 일정을 지도와 목록으로 보여 주는 정적 웹사이트입니다. 서버 없이 GitHub Pages에 올라가고, 하루 두 번 데이터를 새로 모아 다시 배포합니다.
+전국 축제·공연·전시 일정을 지도와 목록으로 보여 주는 정적 웹사이트입니다. 서버 없이 Cloudflare Pages(https://festanow.com)에 올라가고, 하루 두 번 데이터를 새로 모아 다시 배포합니다.
 
 ## 무엇이 있나
 
@@ -16,7 +16,7 @@
 npm install
 npm test          # 테스트
 npm run build     # dist/ 생성 (API 키가 없으면 샘플 데이터)
-npm run serve     # http://localhost:8080/-/
+npm run serve     # http://localhost:8080/
 ```
 
 ## 데이터
@@ -47,12 +47,13 @@ npm run serve     # http://localhost:8080/-/
 - 축제 하나에 50개씩 최대 6번 읽습니다(대부분 1번). 블로그 검색 하루 한도는 30,000건이고, 다음 검색은 유료 요금표에 없어 넘으면 호출만 막힙니다.
 - "김치축제"처럼 흔한 이름은 다른 지역 같은 이름 축제의 검색량이 섞일 수 있습니다.
 
-## 배포 (GitHub Pages)
+## 배포 (Cloudflare Pages)
 
-1. 저장소 **Settings → Pages → Source**를 **GitHub Actions**로 바꿉니다.
-2. `main`에 병합하면 `.github/workflows/deploy.yml`이 테스트·빌드 후 배포합니다. 매일 06시·18시(한국 시간)에도 다시 빌드합니다.
-3. API 키는 **Settings → Secrets and variables → Actions**에 `TOURAPI_KEY`, `KOPIS_KEY`, `CULTURE_KEY`(인기 축제는 `KAKAO_REST_KEY`)로 넣습니다. 코드나 저장소에는 넣지 마세요.
-4. 도메인을 연결하면 Actions 변수 `SITE_URL`(예: `https://example.kr`)을 설정합니다.
+1. Cloudflare **Workers 및 Pages**에 직접 업로드(Direct Upload) 방식의 Pages 프로젝트 `culturemap`을 만들고, 사용자 설정 도메인에 `festanow.com`, `www.festanow.com`을 연결합니다.
+2. Cloudflare API 토큰(권한: 계정 / Cloudflare Pages / 편집)과 계정 ID를 저장소 **Settings → Secrets and variables → Actions**에 `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`로 넣습니다.
+3. `main`에 병합하면 `.github/workflows/deploy.yml`이 테스트·빌드 후 Cloudflare에 올립니다. 매일 06시·18시(한국 시간)에도 다시 빌드합니다.
+4. API 키는 같은 곳에 `TOURAPI_KEY`, `KOPIS_KEY`, `CULTURE_KEY`(인기 축제는 `KAKAO_REST_KEY`)로 넣습니다. 코드나 저장소에는 넣지 마세요.
+5. 사이트 주소는 `site.config.mjs`의 기본값(`https://festanow.com`)을 쓰고, 바꾸려면 Actions 변수 `SITE_URL`을 설정합니다.
 
 샘플 데이터로 빌드한 사이트는 검색엔진에 올라가지 않도록 `noindex`가 붙습니다. 실제 데이터로 바뀌면 자동으로 빠집니다. 그때 구글 서치 콘솔과 네이버 서치어드바이저에 `sitemap.xml`을 등록하세요.
 
