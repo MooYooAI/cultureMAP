@@ -66,7 +66,10 @@ function current() {
 
 function render({ fit = false } = {}) {
   const list = current();
-  $('#heading').textContent = listHeading({ ...state, today });
+  const heading = listHeading({ ...state, today });
+  $('#heading').textContent = heading;
+  // 아무 조건 없는 첫 화면 제목은 로고 옆 문구와 겹쳐서 화면에서는 숨긴다(검색엔진용으로는 남김).
+  $('#heading').classList.toggle('sr-only', heading === listHeading({ today }));
   $('#count').textContent = `${list.length}개 행사${origin ? ' · 가까운 순' : ''}`;
   $('#list').innerHTML = list.map((e) => renderCard(e, { root, today, origin })).join('');
   $('#empty').hidden = list.length > 0;
@@ -313,6 +316,11 @@ function bind() {
     render({ fit: true });
   });
   $('#near').addEventListener('click', locate);
+  // 모바일: 로고 오른쪽 돋보기를 누르면 검색창이 펼쳐진다(PC는 검색창이 늘 보인다).
+  $('#search-toggle')?.addEventListener('click', () => setSearchOpen(!document.body.classList.contains('search-open')));
+  $('#q').addEventListener('keydown', (ev) => {
+    if (ev.key === 'Escape' && !state.q) setSearchOpen(false);
+  });
   for (const id of ['#wx', '#wx-strip']) {
     $(id).addEventListener('click', (ev) => {
       const cell = ev.target.closest('.wx-cell');
@@ -335,6 +343,12 @@ function bind() {
     const btn = ev.target.closest('.map-btn');
     if (btn) focusEvent(btn.closest('.card').dataset.id);
   });
+}
+
+function setSearchOpen(open, focus = true) {
+  document.body.classList.toggle('search-open', open);
+  $('#search-toggle')?.setAttribute('aria-expanded', String(open));
+  if (open && focus) $('#q').focus();
 }
 
 function locate() {
@@ -368,6 +382,7 @@ function locate() {
 
 async function init() {
   syncControls();
+  if (state.q) setSearchOpen(true, false);
   bind();
   initWeather();
   try {

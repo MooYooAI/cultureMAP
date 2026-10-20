@@ -12,7 +12,7 @@ function abs(path) {
 // 링크를 카톡·SNS에 공유할 때 보이는 대표 이미지(1200×630). 행사 페이지는 행사 사진이 있으면 그 사진을 쓴다.
 const OG_IMAGE = 'assets/og.png';
 
-export function layout({ root, path, title, description, body, head = '', scripts = '', noindex, sources, bodyAttrs = '', image = '' }) {
+export function layout({ root, path, title, description, body, head = '', scripts = '', noindex, sources, bodyAttrs = '', image = '', search = false }) {
   const fullTitle = title.startsWith(config.siteName) ? title : `${title} | ${config.siteName}`;
   return `<!doctype html>
 <html lang="ko">
@@ -43,7 +43,8 @@ ${head}
 <a class="skip" href="#main">본문 바로가기</a>
 ${sources.includes('sample') ? '<p class="sample-note">미리보기: 지금은 샘플 데이터예요. 날짜와 내용은 실제와 다를 수 있어요.</p>\n' : ''}<header class="topbar">
   <a class="brand" href="${root}"><img src="${root}assets/icon.svg" alt="" width="28" height="28"><span>${esc(config.siteName)}</span></a>
-  <span class="tagline">${esc(config.tagline)}</span>
+  ${search ? '<button type="button" id="search-toggle" class="search-toggle" aria-label="행사 검색" aria-controls="q" aria-expanded="false"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.6"/><path d="M15.5 15.5 21 21" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg></button>' : ''}
+  <p class="tagline"><span class="hook">${esc(config.hook)}</span> <span class="tagline-text">${esc(config.tagline)}</span></p>
 </header>
 ${body}
 ${footer({ root, sources })}
@@ -107,11 +108,6 @@ export function appPage({ root, path, region = '', category = '', period = 'all'
     ${chips('period', '기간', Object.entries(PERIODS), '', period)}
     <span class="filter-sep" aria-hidden="true"></span>
     ${chips('category', '종류', Object.entries(CATEGORIES), '모든 종류', category)}
-    <span class="filter-sep" aria-hidden="true"></span>
-    <span class="filter-extra">
-      <label class="toggle"><input type="checkbox" id="free"> 무료만</label>
-      <button type="button" id="near" class="link-btn">📍 내 주변 순으로</button>
-    </span>
   </div>
 </section>
 <div class="view-toggle" role="tablist" aria-label="보기 방식">
@@ -120,7 +116,7 @@ export function appPage({ root, path, region = '', category = '', period = 'all'
 </div>
 <main id="main" class="layout" data-view="list">
   <section class="list-pane" aria-labelledby="heading">
-    <h1 id="heading">${esc(heading)}</h1>
+    <h1 id="heading"${isHome ? ' class="sr-only"' : ''}>${esc(heading)}</h1>
     <p id="count" class="count" aria-live="polite">${events.length}개 행사</p>
     ${topicNav({ root, region, category, period })}
     <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
@@ -128,6 +124,10 @@ export function appPage({ root, path, region = '', category = '', period = 'all'
       <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
     </section>
     <div id="wx-strip" class="wx-strip" hidden></div>
+    <div class="filter-extra">
+      <label class="toggle"><input type="checkbox" id="free"> 무료만</label>
+      <button type="button" id="near" class="near-btn" aria-pressed="false">📍 내 주변 순으로</button>
+    </div>
     <ul id="list" class="cards">
 ${list}
     </ul>
@@ -170,6 +170,7 @@ ${list}
     scripts,
     noindex,
     sources,
+    search: true,
     bodyAttrs: `data-page="app" data-preset-region="${region}" data-preset-category="${category}" data-preset-period="${period}"`,
   });
 }
