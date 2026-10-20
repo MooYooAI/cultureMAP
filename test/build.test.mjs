@@ -34,6 +34,26 @@ test('빌드 결과물', async () => {
   assert.match(page, /"@type":"Festival"/);
   assert.match(page, /map\.kakao\.com\/link\/to\//);
 
+  assert.match(index, /<title>페스타나우 - /, '사이트 이름은 페스타나우');
+  assert.match(index, /property="og:image" content="[^"]*\/assets\/og\.png"/);
+  await access(new URL('../dist/assets/og.png', import.meta.url));
+
+  // 검색어 맞춤 목록 페이지
+  const seoulFest = await read('region/seoul/festival/index.html');
+  assert.match(seoulFest, /<h1 id="heading">서울 축제 일정<\/h1>/);
+  assert.match(seoulFest, /data-preset-category="festival"/);
+  assert.match(seoulFest, /href="\.\.\/\.\.\/\.\.\/assets\/styles\.css"/);
+  assert.match(seoulFest, /id="category"[^>]*>[\s\S]*?data-value="festival" aria-pressed="true"/);
+  const weekend = await read('weekend/index.html');
+  assert.match(weekend, /<h1 id="heading">전국 이번 주말 축제·공연·전시<\/h1>/);
+  assert.match(weekend, /<title>전국 이번 주말 축제·공연·전시 \(10\.17\(토\) ~ 10\.18\(일\)\)/);
+  assert.match(await read('this-month/index.html'), /10월 전국 축제·공연·전시 일정/);
+  assert.match(await read('category/exhibition/index.html'), /전국 전시 일정/);
+  assert.match(page, /href="\.\.\/\.\.\/region\/gyeongnam\/festival\/"/, '상세 페이지에서 지역×종류 페이지로 이어진다');
+  const sitemap = await read('sitemap.xml');
+  assert.match(sitemap, /\/region\/seoul\/festival\//);
+  assert.match(sitemap, /\/weekend\//);
+
   const data = JSON.parse(await read('data/events.json'));
   assert.equal(data.events.length, result.events.length);
   assert.match(await read('sitemap.xml'), /region\/jeju\//);

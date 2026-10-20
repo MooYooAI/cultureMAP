@@ -1,6 +1,6 @@
 // 지도+목록 화면. 데이터는 빌드 때 만든 data/events.json 하나만 읽는다(앱으로 확장할 때도 같은 JSON을 쓰면 된다).
 import { filterEvents, sortEvents, todayInSeoul, hasLocation, formatRange, periodRange, addDays, CATEGORIES } from './lib/events.js';
-import { renderCard, esc, eventPath, placeLabel } from './lib/render.js';
+import { renderCard, esc, eventPath, placeLabel, landingPath, listHeading } from './lib/render.js';
 import { REGIONS, REGION_BY_SLUG } from './lib/regions.js';
 import { loadWeather, describe, outingTip } from './lib/weather.js';
 import { addBaseTiles } from './lib/tiles.js';
@@ -8,6 +8,10 @@ import { pickHot, renderHot } from './lib/hot.js';
 
 const root = document.body.dataset.root || './';
 const presetRegion = document.body.dataset.presetRegion || '';
+// 검색어 맞춤 페이지(서울 축제, 이번 주말 등)는 종류·기간이 미리 골라진 채로 열린다.
+const presetCategory = document.body.dataset.presetCategory || '';
+const presetPeriod = document.body.dataset.presetPeriod || 'all';
+const hasPreset = Boolean(presetRegion || presetCategory || presetPeriod !== 'all');
 const $ = (sel) => document.querySelector(sel);
 
 const today = todayInSeoul();
@@ -25,8 +29,8 @@ function readState() {
   return {
     q: p.get('q') || '',
     region: presetRegion || p.get('region') || '',
-    category: p.get('cat') || '',
-    period: p.get('period') || 'all',
+    category: p.has('cat') ? (p.get('cat') === 'all' ? '' : p.get('cat')) : presetCategory,
+    period: p.get('period') || presetPeriod,
     freeOnly: p.get('free') === '1',
     view: p.get('view') === 'map' ? 'map' : 'list',
   };
@@ -36,8 +40,8 @@ function writeState() {
   const p = new URLSearchParams();
   if (state.q) p.set('q', state.q);
   if (state.region && !presetRegion) p.set('region', state.region);
-  if (state.category) p.set('cat', state.category);
-  if (state.period !== 'all') p.set('period', state.period);
+  if (state.category !== presetCategory) p.set('cat', state.category || 'all');
+  if (state.period !== presetPeriod) p.set('period', state.period);
   if (state.freeOnly) p.set('free', '1');
   if (state.view === 'map') p.set('view', 'map');
   const qs = p.toString();
@@ -62,8 +66,7 @@ function current() {
 
 function render({ fit = false } = {}) {
   const list = current();
-  const place = state.region ? REGION_BY_SLUG[state.region]?.name : '전국';
-  $('#heading').textContent = `${place} 축제·공연·전시 일정`;
+  $('#heading').textContent = listHeading({ ...state, today });
   $('#count').textContent = `${list.length}개 행사${origin ? ' · 가까운 순' : ''}`;
   $('#list').innerHTML = list.map((e) => renderCard(e, { root, today, origin })).join('');
   $('#empty').hidden = list.length > 0;
@@ -287,10 +290,9 @@ function bind() {
     }, 150);
   });
   $('#region').addEventListener('change', (ev) => {
-    // 지역별 페이지에서는 해당 지역 페이지로 이동해 주소(검색 노출용)를 유지한다.
-    if (presetRegion) {
-      const slug = ev.target.value;
-      location.href = slug ? `${root}region/${slug}/` : root;
+    // 지역·종류별 페이지에서는 같은 종류의 다른 지역 페이지로 이동해 주소(검색 노출용)를 유지한다.
+    if (hasPreset) {
+      location.href = root + landingPath({ region: ev.target.value, category: presetCategory, period: presetPeriod });
       return;
     }
     state.region = ev.target.value;
@@ -306,7 +308,7 @@ function bind() {
     b.addEventListener('click', () => setView(b.dataset.view));
   }
   $('#reset').addEventListener('click', () => {
-    Object.assign(state, { q: '', category: '', period: 'all', freeOnly: false, region: presetRegion });
+    Object.assign(state, { q: '', category: presetCategory, period: presetPeriod, freeOnly: false, region: presetRegion });
     syncControls();
     render({ fit: true });
   });
