@@ -50,7 +50,7 @@ export function renderCard(e, { root = './', today, origin = null } = {}) {
   const mapBtn = hasLocation(e)
     ? `<button type="button" class="map-btn" aria-label="${esc(e.title)} 지도에서 보기">지도</button>`
     : '';
-  return `<li class="card" data-id="${esc(e.id)}" data-cat="${esc(e.category)}">
+  return `<li class="card" data-id="${esc(e.id)}" data-cat="${esc(e.category)}" data-status="${status.key}">
   <div class="stub-col">${ticketStub(e, status)}${mapBtn}</div>
   <div class="card-body">
     <div class="card-tags"><span class="badge cat-${esc(e.category)}">${esc(CATEGORIES[e.category] || '')}</span><span class="badge status-${status.key}">${esc(status.label)}</span>${free}${noMap}${dist}</div>
