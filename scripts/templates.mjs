@@ -26,7 +26,7 @@ ${noindex ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical
 <meta property="og:url" content="${esc(abs(path))}">
 <meta property="og:locale" content="ko_KR">
 <meta name="theme-color" content="#ff7eb3">
-<link rel="icon" href="${root}assets/icon.svg" type="image/svg+xml">
+${config.verification?.naver ? `<meta name="naver-site-verification" content="${esc(config.verification.naver)}">\n` : ''}<link rel="icon" href="${root}assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="${root}manifest.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
