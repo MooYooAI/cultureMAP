@@ -360,10 +360,13 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
   .filters { display: flex; flex-wrap: wrap; align-items: center; }
   .search-row { flex: 0 0 auto; }
   .search-row input { display: none; }
-  .filter-bar { flex: 1 1 0; }
+  /* 기간 버튼은 지역 선택 옆, 종류 버튼(축제·공연·전시)은 그 아래 한 줄. 각 줄은 옆으로 넘겨 본다 */
+  .filter-bar { display: contents; }
+  .filter-sep { display: none; }
+  #period { flex: 1 1 0; min-width: 0; }
+  #category { flex: 1 1 100%; min-width: 0; }
   .search-open .search-row { flex-basis: 100%; }
   .search-open .search-row input { display: block; }
-  .search-open .filter-bar { flex-basis: 100%; }
 }
 @media (min-width: 960px) {
   .topbar, .filters { padding-left: 24px; padding-right: 24px; }
