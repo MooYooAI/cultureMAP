@@ -17,12 +17,14 @@ test('빌드 결과물', async () => {
     console.log = origLog;
   }
   const index = await read('index.html');
-  assert.match(index, /<h1 id="heading">전국 축제·공연·전시 일정<\/h1>/);
+  assert.match(index, /<h1 id="heading" class="sr-only">전국 축제·공연·전시 일정<\/h1>/);
   assert.match(index, /class="card"/, '검색엔진용으로 목록을 미리 그려 둔다');
   assert.match(index, /noindex/, '샘플 데이터는 검색 제외');
   assert.doesNotMatch(index, /서울세계불꽃축제/, '끝난 행사는 첫 화면 목록에서 빠진다');
   assert.match(index, /<section id="hot" class="hot"[^>]*hidden>/, '검색량 키가 없으면 인기 축제 줄을 숨긴다');
-  assert.match(index, /<div class="filter-bar">[\s\S]*id="period"[\s\S]*id="category"[\s\S]*id="free"/);
+  assert.match(index, /<div class="filter-bar">[\s\S]*id="period"[\s\S]*id="category"/);
+  assert.match(index, /id="wx-strip"[^>]*><\/div>\s*<div class="filter-extra">[\s\S]*id="free"[\s\S]*id="near"/, "무료만·내 주변 순은 날씨 줄 아래");
+  assert.match(index, /id="search-toggle"/);
 
   const seoul = await read('region/seoul/index.html');
   assert.match(seoul, /서울 축제·공연·전시 일정/);
