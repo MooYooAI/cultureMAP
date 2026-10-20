@@ -34,7 +34,7 @@ ${image ? '' : '<meta property="og:image:width" content="1200">\n<meta property=
 ${config.verification?.naver ? `<meta name="naver-site-verification" content="${esc(config.verification.naver)}">\n` : ''}<link rel="icon" href="${root}assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="${root}manifest.webmanifest">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="${root}assets/styles.css">
 ${head}
 </head>
