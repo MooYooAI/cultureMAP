@@ -83,16 +83,6 @@ button, input, select { font: inherit; color: inherit; }
 .toggle input { width: 18px; height: 18px; accent-color: var(--brand); }
 .link-btn { background: none; border: 0; color: var(--brand-strong); font-weight: 700; cursor: pointer; min-height: 36px; padding: 0 4px; }
 
-/* 지금 많이 찾는 축제(왼쪽 반)와 바로가기 버튼(오른쪽 반)을 한 줄에. 인기 축제가 없으면 버튼이 줄을 다 쓴다 */
-.hot-row { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 12px; }
-.hot-row > * { flex: 1 1 0; min-width: 0; }
-.hot-row .hot { margin: 0; }
-.hot-row .topic-links ul { margin: 0; }
-.hot-row .hot:not([hidden]) + .topic-links ul { gap: 5px; }
-.hot-row .hot:not([hidden]) + .topic-links a { padding: 4px 10px; font-size: 12px; }
-.hot-row .hot-head { flex-wrap: wrap; row-gap: 0; padding: 0 10px; }
-.hot-row .hot-head h2 { font-size: 15px; white-space: nowrap; }
-.hot-row .hot-list { grid-auto-columns: calc(100% - 14px); padding: 0 10px 2px; }
 /* 지금 많이 찾는 축제 */
 .hot { margin: 0 0 12px; padding: 10px 0 6px; border-radius: var(--radius); background: linear-gradient(180deg, #fff1e6, #fff 80%); border: 2px solid #ffe0c7; }
 .hot[hidden] { display: none; }

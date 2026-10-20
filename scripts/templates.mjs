@@ -112,13 +112,11 @@ export function appPage({ root, path, region = '', category = '', period = 'all'
   <section class="list-pane" aria-labelledby="heading">
     <h1 id="heading"${isHome ? ' class="sr-only"' : ''}>${esc(heading)}</h1>
     <p id="count" class="count" aria-live="polite">${events.length}개 행사</p>
-    <div class="hot-row">
-      <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
-        <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">블로그 글 수 · 최근 7일</span></header>
-        <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
-      </section>
-      ${topicNav({ root, region, category, period })}
-    </div>
+    ${topicNav({ root, region, category, period })}
+    <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
+      <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">블로그 글 수 · 최근 7일</span></header>
+      <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
+    </section>
     <div id="wx-strip" class="wx-strip" hidden></div>
     <div class="filter-extra">
       <label class="toggle"><input type="checkbox" id="free"> 무료만</label>
