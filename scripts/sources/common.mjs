@@ -75,10 +75,29 @@ export function parseXmlItems(xml, tag) {
   return items;
 }
 
-export async function fetchText(url) {
-  const res = await fetch(url, { headers: { Accept: 'application/json, application/xml, text/xml' } });
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText} for ${url.replace(/(serviceKey|service)=[^&]+/i, '$1=***')}`);
-  return res.text();
+// 공공데이터포털(apis.data.go.kr)은 가끔 접속 자체가 10초 동안 안 되다가 곧 풀린다.
+// 접속 실패(fetch failed)와 5xx는 잠시 쉬었다가 두 번 더 시도한다. 4xx(키·한도 문제)는 바로 실패.
+export const RETRY_DELAYS = [3000, 10000];
+
+export async function fetchText(url, { delays = RETRY_DELAYS } = {}) {
+  const masked = url.replace(/(serviceKey|service)=[^&]+/i, '$1=***');
+  for (let attempt = 0; ; attempt++) {
+    let res;
+    try {
+      res = await fetch(url, { headers: { Accept: 'application/json, application/xml, text/xml' } });
+    } catch (err) {
+      if (attempt >= delays.length) throw err;
+      await sleep(delays[attempt]);
+      continue;
+    }
+    if (res.ok) return res.text();
+    if (res.status < 500 || attempt >= delays.length) throw new Error(`${res.status} ${res.statusText} for ${masked}`);
+    await sleep(delays[attempt]);
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 // 같은 공연이 KOPIS와 문화포털에 함께 나올 수 있다. 제목+장소+시작일이 같으면 하나로 합친다.

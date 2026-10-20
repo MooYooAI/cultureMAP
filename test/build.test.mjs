@@ -22,7 +22,7 @@ test('빌드 결과물', async () => {
   assert.match(index, /noindex/, '샘플 데이터는 검색 제외');
   assert.doesNotMatch(index, /서울세계불꽃축제/, '끝난 행사는 첫 화면 목록에서 빠진다');
   assert.match(index, /<section id="hot" class="hot"[^>]*hidden>/, '검색량 키가 없으면 인기 축제 줄을 숨긴다');
-  assert.match(index, /<div class="filter-bar">[\s\S]*id="period"[\s\S]*id="category"/);
+  assert.match(index, /<div class="search-row">[\s\S]*<select id="region"[\s\S]*<select id="period"[\s\S]*<select id="category"/, '지역·기간·종류는 고르는 칸');
   assert.match(index, /id="wx-strip"[^>]*><\/div>\s*<div class="filter-extra">[\s\S]*id="free"[\s\S]*id="near"/, "무료만·내 주변 순은 날씨 줄 아래");
   assert.match(index, /id="search-toggle"/);
 
@@ -45,7 +45,7 @@ test('빌드 결과물', async () => {
   assert.match(seoulFest, /<h1 id="heading">서울 축제 일정<\/h1>/);
   assert.match(seoulFest, /data-preset-category="festival"/);
   assert.match(seoulFest, /href="\.\.\/\.\.\/\.\.\/assets\/styles\.css"/);
-  assert.match(seoulFest, /id="category"[^>]*>[\s\S]*?data-value="festival" aria-pressed="true"/);
+  assert.match(seoulFest, /<select id="category" aria-label="종류" class="is-set">[\s\S]*?<option value="festival" selected>/);
   const weekend = await read('weekend/index.html');
   assert.match(weekend, /<h1 id="heading">전국 이번 주말 축제·공연·전시<\/h1>/);
   assert.match(weekend, /<title>전국 이번 주말 축제·공연·전시 \(10\.17\(토\) ~ 10\.18\(일\)\)/);

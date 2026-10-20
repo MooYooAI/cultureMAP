@@ -126,3 +126,34 @@ test('관광공사 소개정보로 시간·요금을 채우고, 받은 건 다�
     globalThis.fetch = origFetch;
   }
 });
+
+test('fetchText: 접속 실패와 5xx는 다시 시도하고, 4xx는 바로 실패', async () => {
+  const { fetchText } = await import('../scripts/sources/common.mjs');
+  const origFetch = globalThis.fetch;
+  try {
+    let calls = 0;
+    globalThis.fetch = async () => {
+      calls++;
+      if (calls === 1) throw new TypeError('fetch failed');
+      if (calls === 2) return new Response('busy', { status: 503 });
+      return new Response('ok');
+    };
+    assert.equal(await fetchText('https://x/?serviceKey=SECRET', { delays: [0, 0] }), 'ok');
+    assert.equal(calls, 3);
+
+    calls = 0;
+    globalThis.fetch = async () => {
+      calls++;
+      return new Response('nope', { status: 401, statusText: 'Unauthorized' });
+    };
+    await assert.rejects(fetchText('https://x/?serviceKey=SECRET', { delays: [0, 0] }), (err) => !err.message.includes('SECRET'));
+    assert.equal(calls, 1);
+
+    globalThis.fetch = async () => {
+      throw new TypeError('fetch failed');
+    };
+    await assert.rejects(fetchText('https://x/', { delays: [0, 0] }), /fetch failed/);
+  } finally {
+    globalThis.fetch = origFetch;
+  }
+});

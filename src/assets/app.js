@@ -52,10 +52,10 @@ function syncControls() {
   $('#q').value = state.q;
   $('#region').value = state.region;
   $('#free').checked = state.freeOnly;
-  for (const [id, key] of [['#period', 'period'], ['#category', 'category']]) {
-    for (const b of document.querySelectorAll(`${id} .chip`)) {
-      b.setAttribute('aria-pressed', String(b.dataset.value === (state[key] || '')));
-    }
+  $('#period').value = state.period;
+  $('#category').value = state.category;
+  for (const [id, base] of [['#region', ''], ['#period', 'all'], ['#category', '']]) {
+    $(id).classList.toggle('is-set', $(id).value !== base);
   }
   setView(state.view, false);
 }
@@ -273,11 +273,9 @@ function pickRegion(slug) {
 
 // ---- 이벤트 연결 ----
 
-function bindChips(id, key) {
-  $(id).addEventListener('click', (ev) => {
-    const b = ev.target.closest('.chip');
-    if (!b) return;
-    state[key] = b.dataset.value;
+function bindPicker(id, key) {
+  $(id).addEventListener('change', (ev) => {
+    state[key] = ev.target.value;
     syncControls();
     render({ fit: true });
   });
@@ -305,8 +303,8 @@ function bind() {
     state.freeOnly = ev.target.checked;
     render({ fit: true });
   });
-  bindChips('#period', 'period');
-  bindChips('#category', 'category');
+  bindPicker('#period', 'period');
+  bindPicker('#category', 'category');
   for (const b of document.querySelectorAll('.view-toggle [data-view]')) {
     b.addEventListener('click', () => setView(b.dataset.view));
   }

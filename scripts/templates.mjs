@@ -78,12 +78,12 @@ function footer({ root, sources }) {
 </footer>`;
 }
 
-function chips(id, label, entries, allLabel, selected = '') {
-  const items = allLabel ? [['', allLabel], ...entries] : entries;
-  const pressed = items.some(([v]) => v === selected) ? selected : items[0][0];
-  return `<div class="chips" role="group" aria-label="${label}" id="${id}">${items
-    .map(([v, t]) => `<button type="button" class="chip" data-value="${v}" aria-pressed="${v === pressed}">${esc(t)}</button>`)
-    .join('')}</div>`;
+// 지역·기간·종류는 모두 눌러서 고르는 칸(select). 기본값이 아닌 걸 고르면 칸이 분홍으로 바뀐다.
+function picker(id, label, items, selected) {
+  const value = items.some(([v]) => v === selected) ? selected : items[0][0];
+  return `<select id="${id}" aria-label="${label}"${value !== items[0][0] ? ' class="is-set"' : ''}>${items
+    .map(([v, t]) => `<option value="${v}"${v === value ? ' selected' : ''}>${esc(t)}</option>`)
+    .join('')}</select>`;
 }
 
 // 첫 화면과 지역별 페이지가 같이 쓰는 지도+목록 화면.
@@ -95,19 +95,13 @@ export function appPage({ root, path, region = '', category = '', period = 'all'
   const description = isHome ? config.description : landingDescription({ r, category, period, today });
   const title = isHome ? `${config.siteName} - ${config.tagline}` : period === 'weekend' ? `${heading} (${weekendLabel(today)})` : heading;
   const list = events.slice(0, 60).map((e) => renderCard(e, { root, today })).join('\n');
-  // 검색창 옆에 기간·종류 버튼을 한 줄로 둔다(좁은 화면에서는 버튼 줄이 옆으로 넘어간다).
+  // 검색창 옆에 지역·기간·종류 고르는 칸을 한 줄로 둔다(모바일은 검색창이 접혀 세 칸만 보인다).
   const body = `<section class="filters" aria-label="검색 조건">
   <div class="search-row">
     <input type="search" id="q" placeholder="행사 이름, 장소로 검색" aria-label="행사 검색" enterkeyhint="search" autocomplete="off">
-    <select id="region" aria-label="지역">
-      <option value="">전국</option>
-      ${REGIONS.map((x) => `<option value="${x.slug}"${x.slug === region ? ' selected' : ''}>${esc(x.name)}</option>`).join('')}
-    </select>
-  </div>
-  <div class="filter-bar">
-    ${chips('period', '기간', Object.entries(PERIODS), '', period)}
-    <span class="filter-sep" aria-hidden="true"></span>
-    ${chips('category', '종류', Object.entries(CATEGORIES), '모든 종류', category)}
+    ${picker('region', '지역', [['', '전국'], ...REGIONS.map((x) => [x.slug, x.name])], region)}
+    ${picker('period', '기간', [['all', '전체 기간'], ...Object.entries(PERIODS).filter(([v]) => v !== 'all')], period)}
+    ${picker('category', '종류', [['', '모든 종류'], ...Object.entries(CATEGORIES)], category)}
   </div>
 </section>
 <div class="view-toggle" role="tablist" aria-label="보기 방식">
@@ -118,13 +112,11 @@ export function appPage({ root, path, region = '', category = '', period = 'all'
   <section class="list-pane" aria-labelledby="heading">
     <h1 id="heading"${isHome ? ' class="sr-only"' : ''}>${esc(heading)}</h1>
     <p id="count" class="count" aria-live="polite">${events.length}개 행사</p>
-    <div class="hot-row">
-      <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
-        <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">블로그 글 수 · 최근 7일</span></header>
-        <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
-      </section>
-      ${topicNav({ root, region, category, period })}
-    </div>
+    ${topicNav({ root, region, category, period })}
+    <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
+      <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">블로그 글 수 · 최근 7일</span></header>
+      <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
+    </section>
     <div id="wx-strip" class="wx-strip" hidden></div>
     <div class="filter-extra">
       <label class="toggle"><input type="checkbox" id="free"> 무료만</label>
