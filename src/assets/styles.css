@@ -106,6 +106,9 @@ button, input, select { font: inherit; color: inherit; }
 #map { width: 100%; height: 100%; background: #f4f1ee; }
 .list-pane h1 { font-family: var(--font-cute); font-weight: 400; font-size: 21px; margin: 12px 0 0; }
 .count { margin: 2px 0 10px; color: var(--muted); font-size: 13px; }
+.topic-links ul { list-style: none; margin: 0 0 12px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.topic-links a { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--brand-soft); color: var(--brand-strong); font-size: 13px; text-decoration: none; }
+.topic-links a:hover { background: var(--line); }
 
 .view-toggle {
   position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%); z-index: 1000;
@@ -251,6 +254,7 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 .event { max-width: 760px; margin: 0 auto; padding: 8px 16px 40px; }
 .crumbs { font-size: 13px; color: var(--muted); margin: 4px 0 12px; }
 .crumbs a { color: var(--brand-strong); text-decoration: none; }
+.ended-note { margin: 0 0 12px; padding: 10px 14px; border-radius: 14px; background: #f3eef2; color: var(--text); font-size: 14px; }
 .event h1 { font-family: var(--font-cute); font-weight: 400; font-size: 27px; line-height: 1.3; margin: 8px 0 14px; }
 .event-image { margin: 0 0 14px; background: #f3f4f6; border-radius: var(--radius); overflow: hidden; text-align: center; }
 .event-image img { max-width: 100%; max-height: 480px; height: auto; vertical-align: middle; } /* 원본 비율 유지 */

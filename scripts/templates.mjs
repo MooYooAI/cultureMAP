@@ -1,7 +1,7 @@
 // 빌드 때 만드는 HTML 페이지 템플릿. root는 페이지 위치에서 사이트 맨 위까지의 상대 경로('./', '../../').
 import config from '../site.config.mjs';
-import { esc, renderCard, eventPath, placeLabel } from '../src/assets/lib/render.js';
-import { CATEGORIES, PERIODS, formatRange, hasLocation, eventStatus } from '../src/assets/lib/events.js';
+import { esc, renderCard, eventPath, placeLabel, landingPath, listHeading } from '../src/assets/lib/render.js';
+import { CATEGORIES, PERIODS, formatRange, hasLocation, eventStatus, periodRange } from '../src/assets/lib/events.js';
 import { REGIONS, REGION_BY_SLUG } from '../src/assets/lib/regions.js';
 import { renderHot } from '../src/assets/lib/hot.js';
 
@@ -9,8 +9,11 @@ function abs(path) {
   return `${config.siteUrl}/${path}`;
 }
 
-export function layout({ root, path, title, description, body, head = '', scripts = '', noindex, sources, bodyAttrs = '' }) {
-  const fullTitle = title === config.siteName ? title : `${title} | ${config.siteName}`;
+// 링크를 카톡·SNS에 공유할 때 보이는 대표 이미지(1200×630). 행사 페이지는 행사 사진이 있으면 그 사진을 쓴다.
+const OG_IMAGE = 'assets/og.png';
+
+export function layout({ root, path, title, description, body, head = '', scripts = '', noindex, sources, bodyAttrs = '', image = '' }) {
+  const fullTitle = title.startsWith(config.siteName) ? title : `${title} | ${config.siteName}`;
   return `<!doctype html>
 <html lang="ko">
 <head>
@@ -25,6 +28,8 @@ ${noindex ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical
 <meta property="og:description" content="${esc(description)}">
 <meta property="og:url" content="${esc(abs(path))}">
 <meta property="og:locale" content="ko_KR">
+<meta property="og:image" content="${esc(image || abs(OG_IMAGE))}">
+${image ? '' : '<meta property="og:image:width" content="1200">\n<meta property="og:image:height" content="630">\n'}<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#ff7eb3">
 ${config.verification?.naver ? `<meta name="naver-site-verification" content="${esc(config.verification.naver)}">\n` : ''}<link rel="icon" href="${root}assets/icon.svg" type="image/svg+xml">
 <link rel="manifest" href="${root}manifest.webmanifest">
@@ -48,9 +53,20 @@ ${scripts}
 `;
 }
 
+// 검색엔진이 모든 목록 페이지를 찾아갈 수 있도록 바닥글에 링크를 모아 둔다.
+const TOPIC_LINKS = [
+  [{ period: 'weekend' }, '이번 주말 축제·공연'],
+  [{ period: 'month' }, '이달의 축제·공연·전시'],
+  ...Object.entries(CATEGORIES).map(([category, name]) => [{ category }, `전국 ${name}`]),
+];
+
 function footer({ root, sources }) {
   const notes = sources.map((s) => config.attributions[s]).filter(Boolean);
   return `<footer class="footer">
+  <nav aria-label="테마별 행사">
+    <h2>테마별 행사</h2>
+    <ul class="region-links">${TOPIC_LINKS.map(([f, t]) => `<li><a href="${root}${landingPath(f)}">${esc(t)}</a></li>`).join('')}</ul>
+  </nav>
   <nav aria-label="지역별 행사">
     <h2>지역별 축제·공연</h2>
     <ul class="region-links">${REGIONS.map((r) => `<li><a href="${root}region/${r.slug}/">${esc(r.name)}</a></li>`).join('')}</ul>
@@ -61,21 +77,22 @@ function footer({ root, sources }) {
 </footer>`;
 }
 
-function chips(id, label, entries, allLabel) {
+function chips(id, label, entries, allLabel, selected = '') {
   const items = allLabel ? [['', allLabel], ...entries] : entries;
+  const pressed = items.some(([v]) => v === selected) ? selected : items[0][0];
   return `<div class="chips" role="group" aria-label="${label}" id="${id}">${items
-    .map(([v, t], i) => `<button type="button" class="chip" data-value="${v}" aria-pressed="${i === 0}">${esc(t)}</button>`)
+    .map(([v, t]) => `<button type="button" class="chip" data-value="${v}" aria-pressed="${v === pressed}">${esc(t)}</button>`)
     .join('')}</div>`;
 }
 
 // 첫 화면과 지역별 페이지가 같이 쓰는 지도+목록 화면.
-export function appPage({ root, path, region, events, hot = [], today, sources, noindex }) {
+// region·category·period가 있으면 "서울 축제", "이번 주말"처럼 조건이 미리 걸린 검색어 맞춤 페이지가 된다.
+export function appPage({ root, path, region = '', category = '', period = 'all', events, hot = [], today, sources, noindex }) {
   const r = region ? REGION_BY_SLUG[region] : null;
-  const place = r ? r.name : '전국';
-  const heading = `${place} 축제·공연·전시 일정`;
-  const description = r
-    ? `${r.fullName}에서 열리는 축제, 공연, 전시 일정을 지도와 목록으로 확인하세요. 이번 주말 ${r.name}에서 갈 만한 행사, 무료 행사도 찾을 수 있어요.`
-    : config.description;
+  const heading = listHeading({ region, category, period, today });
+  const isHome = !region && !category && period === 'all';
+  const description = isHome ? config.description : landingDescription({ r, category, period, today });
+  const title = isHome ? `${config.siteName} - ${config.tagline}` : period === 'weekend' ? `${heading} (${weekendLabel(today)})` : heading;
   const list = events.slice(0, 60).map((e) => renderCard(e, { root, today })).join('\n');
   // 검색창 옆에 기간·종류 버튼을 한 줄로 둔다(좁은 화면에서는 버튼 줄이 옆으로 넘어간다).
   const body = `<section class="filters" aria-label="검색 조건">
@@ -87,9 +104,9 @@ export function appPage({ root, path, region, events, hot = [], today, sources, 
     </select>
   </div>
   <div class="filter-bar">
-    ${chips('period', '기간', Object.entries(PERIODS))}
+    ${chips('period', '기간', Object.entries(PERIODS), '', period)}
     <span class="filter-sep" aria-hidden="true"></span>
-    ${chips('category', '종류', Object.entries(CATEGORIES), '모든 종류')}
+    ${chips('category', '종류', Object.entries(CATEGORIES), '모든 종류', category)}
     <span class="filter-sep" aria-hidden="true"></span>
     <span class="filter-extra">
       <label class="toggle"><input type="checkbox" id="free"> 무료만</label>
@@ -105,6 +122,7 @@ export function appPage({ root, path, region, events, hot = [], today, sources, 
   <section class="list-pane" aria-labelledby="heading">
     <h1 id="heading">${esc(heading)}</h1>
     <p id="count" class="count" aria-live="polite">${events.length}개 행사</p>
+    ${topicNav({ root, region, category, period })}
     <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
       <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">블로그 글 수 · 최근 7일</span></header>
       <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
@@ -135,6 +153,7 @@ ${list}
     '@context': 'https://schema.org',
     '@type': 'WebSite',
     name: config.siteName,
+    alternateName: config.alternateNames,
     url: abs(''),
   })}</script>`;
   const scripts = `<script>window.SITE_TILES=${JSON.stringify(config.tiles)}</script>
@@ -144,15 +163,46 @@ ${list}
   return layout({
     root,
     path,
-    title: r ? heading : config.siteName,
+    title,
     description,
     body,
     head,
     scripts,
     noindex,
     sources,
-    bodyAttrs: `data-page="app" data-preset-region="${region || ''}"`,
+    bodyAttrs: `data-page="app" data-preset-region="${region}" data-preset-category="${category}" data-preset-period="${period}"`,
   });
+}
+
+function weekendLabel(today) {
+  const { from, to } = periodRange('weekend', today);
+  return formatRange(from, to);
+}
+
+function landingDescription({ r, category, period, today }) {
+  const where = r ? `${r.fullName}에서` : '전국에서';
+  const what = category ? CATEGORIES[category] : '축제, 공연, 전시';
+  const when =
+    period === 'weekend'
+      ? `이번 주말(${weekendLabel(today)}) `
+      : period === 'month'
+        ? `${Number(today.slice(5, 7))}월 한 달 동안 `
+        : '';
+  return `${when}${where} 열리는 ${what} 일정을 지도와 목록으로 확인하세요. 진행 중인 행사, 곧 시작하는 행사, 무료 행사까지 한눈에 볼 수 있어요.`;
+}
+
+// 목록 위 바로가기: 지금 페이지와 이웃한 검색어 맞춤 페이지(같은 지역의 종류별, 이번 주말)를 잇는다.
+function topicNav({ root, region, category, period }) {
+  const r = region ? REGION_BY_SLUG[region] : null;
+  const place = r ? r.name : '전국';
+  const links = [
+    [{ region, period: 'weekend' }, `${place} 이번 주말`],
+    ...(r ? [] : [[{ period: 'month' }, '이달의 행사']]),
+    ...Object.entries(CATEGORIES).map(([c, name]) => [{ region, category: c }, `${place} ${name}`]),
+  ].filter(([f]) => !((f.category || '') === category && (f.period || 'all') === period));
+  return `<nav class="topic-links" aria-label="바로가기"><ul>${links
+    .map(([f, t]) => `<li><a href="${root}${landingPath(f)}">${esc(t)}</a></li>`)
+    .join('')}</ul></nav>`;
 }
 
 function jsonLd(obj) {
@@ -192,6 +242,7 @@ export function eventPage({ e, related, today, sources, noindex }) {
   const root = '../../';
   const r = REGION_BY_SLUG[e.region];
   const status = eventStatus(e, today);
+  const ended = status.key === 'ended';
   const dateText = formatRange(e.startDate, e.endDate, true);
   const description = `${dateText} ${placeLabel(e)}. ${e.description || `${r.name}에서 열리는 ${CATEGORIES[e.category]} 정보와 위치를 확인하세요.`}`;
   const mapQuery = encodeURIComponent(`${e.venue} ${e.address || r.name}`.trim());
@@ -210,7 +261,8 @@ export function eventPage({ e, related, today, sources, noindex }) {
     ? `<figure class="event-image"><img src="${esc(e.image.url)}" alt="${esc(e.title)} 대표 이미지" decoding="async"></figure>`
     : '';
   const body = `<main id="main" class="event">
-  <nav class="crumbs" aria-label="위치"><a href="${root}">전국</a> › <a href="${root}region/${r.slug}/">${esc(r.name)}</a></nav>
+  <nav class="crumbs" aria-label="위치"><a href="${root}">전국</a> › <a href="${root}region/${r.slug}/">${esc(r.name)}</a> › <a href="${root}${landingPath({ region: r.slug, category: e.category })}">${esc(r.name)} ${esc(CATEGORIES[e.category])}</a></nav>
+  ${ended ? `<p class="ended-note">이 행사는 끝났어요. 아래에서 ${esc(r.name)}의 다른 행사를 찾아보세요.</p>` : ''}
   <article>
     <div class="card-tags"><span class="badge cat-${esc(e.category)}">${esc(CATEGORIES[e.category])}</span><span class="badge status-${status.key}" data-start="${e.startDate}" data-end="${e.endDate}" id="status">${esc(status.label)}</span>${e.isFree ? '<span class="badge free">무료</span>' : ''}</div>
     <h1>${esc(e.title)}</h1>
@@ -228,7 +280,7 @@ export function eventPage({ e, related, today, sources, noindex }) {
   </article>
   ${
     related.length
-      ? `<section class="related"><h2>${esc(r.name)}의 다른 행사</h2><ul class="cards">${related
+      ? `<section class="related"><h2>${ended ? `지금 ${esc(r.name)}에서 열리는 행사` : `${esc(r.name)}의 다른 행사`}</h2><ul class="cards">${related
           .map((x) => renderCard(x, { root, today }))
           .join('\n')}</ul></section>`
       : ''
@@ -250,6 +302,7 @@ ${hasLocation(e) ? `<script src="${root}assets/vendor/leaflet/leaflet.js" defer>
     noindex,
     sources,
     bodyAttrs: 'data-page="event"',
+    image: e.image?.url || '',
   });
 }
 

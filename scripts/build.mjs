@@ -7,9 +7,10 @@ import config from '../site.config.mjs';
 import { loadAllEvents } from './sources/index.mjs';
 import { loadHotFestivals } from './trends.mjs';
 import { appPage, eventPage, notFoundPage } from './templates.mjs';
-import { todayInSeoul, sortEvents, filterEvents } from '../src/assets/lib/events.js';
+import { todayInSeoul, sortEvents, filterEvents, CATEGORIES } from '../src/assets/lib/events.js';
 import { REGIONS } from '../src/assets/lib/regions.js';
-import { eventPath } from '../src/assets/lib/render.js';
+import { eventPath, landingPath } from '../src/assets/lib/render.js';
+import { readArchive, writeArchive, mergeArchive } from './archive.mjs';
 import { pickHot } from '../src/assets/lib/hot.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -55,24 +56,48 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
     JSON.stringify({ generatedAt: new Date().toISOString(), today, sources, events, hot }),
   );
 
-  await write('index.html', appPage({ root: './', path: '', events: upcoming, hot: pickHot(hot, events, { today }), today, sources, noindex }));
-  for (const r of REGIONS) {
-    const list = upcoming.filter((e) => e.region === r.slug);
+  // 목록 페이지: 전국, 지역별, 그리고 검색어 맞춤 페이지(지역×종류, 지역·전국 이번 주말, 종류별, 이번 달).
+  // 행사가 하나도 없는 페이지는 링크가 깨지지 않게 만들되 검색에서는 뺀다.
+  const listPages = [
+    {},
+    { period: 'weekend' },
+    { period: 'month' },
+    ...Object.keys(CATEGORIES).map((category) => ({ category })),
+    ...REGIONS.flatMap((r) => [
+      { region: r.slug },
+      { region: r.slug, period: 'weekend' },
+      ...Object.keys(CATEGORIES).map((category) => ({ region: r.slug, category })),
+    ]),
+  ];
+  const listUrls = [];
+  for (const f of listPages) {
+    const p = landingPath(f);
+    const list = filterEvents(upcoming, f, today);
+    const empty = list.length === 0 && p !== '';
+    if (!empty) listUrls.push(p);
     await write(
-      `region/${r.slug}/index.html`,
+      `${p}index.html`,
       appPage({
-        root: '../../',
-        path: `region/${r.slug}/`,
-        region: r.slug,
+        root: '../'.repeat(p.split('/').filter(Boolean).length) || './',
+        path: p,
+        ...f,
         events: list,
-        hot: pickHot(hot, events, { region: r.slug, today }),
+        hot: pickHot(hot, events, { region: f.region || '', today }),
         today,
         sources,
-        noindex,
+        noindex: noindex || empty,
       }),
     );
   }
-  for (const e of events) {
+
+  // 끝난 행사도 1년 동안 상세 페이지를 남긴다(샘플 데이터일 때는 보관함을 건드리지 않는다).
+  let ended = [];
+  if (!noindex) {
+    const merged = mergeArchive(await readArchive(), events, today);
+    ended = merged.ended;
+    await writeArchive(merged.archive);
+  }
+  for (const e of [...events, ...ended]) {
     const related = upcoming.filter((x) => x.region === e.region && x.id !== e.id).slice(0, 6);
     await write(`${eventPath(e)}index.html`, eventPage({ e, related, today, sources, noindex }));
   }
@@ -80,7 +105,7 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
   const siteRoot = new URL(config.siteUrl + '/').pathname;
   await write('404.html', notFoundPage({ sources, siteRoot }));
 
-  const urls = ['', ...REGIONS.map((r) => `region/${r.slug}/`), ...events.map(eventPath)];
+  const urls = [...listUrls, ...events.map(eventPath), ...ended.map(eventPath)];
   await write(
     'sitemap.xml',
     `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
@@ -96,7 +121,7 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
     JSON.stringify(
       {
         name: config.siteName,
-        short_name: '공연지도',
+        short_name: config.siteName,
         description: config.description,
         lang: 'ko',
         start_url: './',
@@ -112,8 +137,8 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
   );
   await write('.nojekyll', '');
 
-  console.log(`[build] ${events.length}개 행사, 출처: ${sources.join(', ')}${noindex ? ' (noindex)' : ''} → dist/`);
-  return { events, sources, noindex, hot };
+  console.log(`[build] ${events.length}개 행사 + 끝난 행사 ${ended.length}개, 목록 ${listPages.length}쪽, 출처: ${sources.join(', ')}${noindex ? ' (noindex)' : ''} → dist/`);
+  return { events, sources, noindex, hot, ended };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
