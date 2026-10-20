@@ -66,20 +66,11 @@ button, input, select { font: inherit; color: inherit; }
 }
 .search-row input:focus, .search-row select:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-soft); }
 .search-row input { flex: 1; min-width: 0; }
-.search-row select { flex: 0 0 auto; }
-.chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
-.chips::-webkit-scrollbar { display: none; }
-.chip {
-  flex: 0 0 auto; height: 36px; padding: 0 14px; border-radius: 999px;
-  border: 2px solid var(--line); background: var(--surface); cursor: pointer; white-space: nowrap;
-  transition: transform .15s, background .15s;
+.search-row select {
+  flex: 0 0 auto; appearance: none; -webkit-appearance: none; padding: 0 34px 0 16px; font-size: 15px; color: var(--text); cursor: pointer;
+  background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23ec4c8f' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 14px center;
 }
-.chip:hover { transform: translateY(-2px); border-color: #ffc2da; }
-.chip[aria-pressed='true'] { background: var(--brand); border-color: var(--brand); color: #fff; font-weight: 700; box-shadow: 0 4px 10px rgba(255, 111, 168, .35); }
-/* 기간·종류 버튼, 무료만, 내 주변을 한 줄에. 좁은 화면에서는 옆으로 밀어 본다 */
-.filter-bar { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
-.filter-bar::-webkit-scrollbar { display: none; }
-.filter-bar .chips { flex: 0 0 auto; overflow: visible; padding-bottom: 0; }
+.search-row select.is-set { border-color: var(--brand); background-color: var(--brand-soft); color: var(--brand-strong); font-weight: 700; }
 .filter-extra { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; }
 .filter-extra .toggle, .near-btn {
   display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 14px; border-radius: 999px;
@@ -88,7 +79,6 @@ button, input, select { font: inherit; color: inherit; }
 .filter-extra .toggle:has(input:checked) { border-color: var(--free); background: #eafbf0; color: #15803d; }
 .near-btn { color: var(--brand-strong); }
 .near-btn[aria-pressed='true'] { background: var(--brand); border-color: var(--brand); color: #fff; }
-.filter-sep { flex: 0 0 2px; align-self: stretch; margin: 6px 4px; border-radius: 2px; background: var(--line); }
 .toggle { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; }
 .toggle input { width: 18px; height: 18px; accent-color: var(--brand); }
 .link-btn { background: none; border: 0; color: var(--brand-strong); font-weight: 700; cursor: pointer; min-height: 36px; padding: 0 4px; }
@@ -367,15 +357,10 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 /* 넓은 화면: 일정 목록 · 큰 지도(가운데) · 광고 */
 /* 모바일·태블릿: 검색창은 돋보기를 눌러야 펼쳐지고, 접혀 있을 때는 지역 선택과 기간·종류 버튼이 한 줄에 놓인다 */
 @media (max-width: 959px) {
-  .filters { display: flex; flex-wrap: wrap; align-items: center; }
-  .search-row { flex: 0 0 auto; }
-  .search-row input { display: none; }
-  /* 기간 버튼은 지역 선택 옆, 종류 버튼(축제·공연·전시)은 그 아래 한 줄. 각 줄은 옆으로 넘겨 본다 */
-  .filter-bar { display: contents; }
-  .filter-sep { display: none; }
-  #period { flex: 1 1 0; min-width: 0; }
-  #category { flex: 1 1 100%; min-width: 0; }
-  .search-open .search-row { flex-basis: 100%; }
+  .search-row { flex-wrap: wrap; gap: 6px; }
+  .search-row input { display: none; flex-basis: 100%; }
+  /* 지역·기간·종류 세 칸이 한 줄을 나눠 쓴다 */
+  .search-row select { flex: 1 1 0; min-width: 0; height: 42px; padding: 0 26px 0 12px; font-size: 14px; background-position: right 10px center; }
   .search-open .search-row input { display: block; }
 }
 @media (min-width: 960px) {
@@ -383,14 +368,9 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
   .search-toggle { display: none; }
   .tagline { order: 0; flex-basis: auto; }
   .topbar, .filters, .layout { max-width: 1680px; margin-left: auto; margin-right: auto; }
-  /* 검색창 옆에 버튼 줄. 화면이 모자라면 버튼 줄 안에서 묶음 단위로 다음 줄로 내려간다 */
-  .filters { display: flex; align-items: flex-start; gap: 12px; }
-  .search-row { flex: 1 1 320px; max-width: 460px; min-width: 300px; }
-  .filter-bar { flex: 0 1 auto; min-width: 0; flex-wrap: wrap; overflow: visible; gap: 6px 5px; padding: 4px 0 0; }
-  .filter-bar .chips { gap: 5px; }
+  .search-row { max-width: 900px; }
+  .search-row input { flex: 1 1 320px; max-width: 460px; }
   .search-row input, .search-row select { height: 42px; }
-  .chip { height: 34px; padding: 0 10px; font-size: 14px; }
-  .filter-sep { margin: 6px 3px; }
   .view-toggle { display: none; }
   .layout { display: grid; grid-template-columns: 360px minmax(0, 1fr); gap: 20px; padding: 0 24px 24px; align-items: start; }
   .layout[data-view] .map-pane, .layout[data-view] .list-pane { display: block; }
