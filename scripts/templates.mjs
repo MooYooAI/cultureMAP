@@ -48,6 +48,7 @@ ${sources.includes('sample') ? '<p class="sample-note">미리보기: 지금은 �
 ${body}
 ${footer({ root, sources })}
 ${scripts}
+<script src="${root}assets/season.js" defer></script>
 </body>
 </html>
 `;
