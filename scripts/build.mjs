@@ -61,7 +61,7 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
   await write(
     'data/events.json',
     // 화면 검색에는 소개글 앞부분이면 충분하다(긴 소개글은 상세 페이지에만 넣어 파일을 가볍게).
-    JSON.stringify({ generatedAt: new Date().toISOString(), today, sources, events: events.map((e) => ({ ...e, description: String(e.description || '').slice(0, 120) })), hot }),
+    JSON.stringify({ generatedAt: new Date().toISOString(), today, sources, events: events.map(({ program, subevent, ...e }) => ({ ...e, description: String(e.description || '').slice(0, 120) })), hot }),
   );
 
   // 목록 페이지: 전국, 지역별, 그리고 검색어 맞춤 페이지(지역×종류, 지역·전국 이번 주말, 종류별, 이번 달).

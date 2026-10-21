@@ -109,11 +109,14 @@ test('관광공사 소개정보로 시간·요금을 채우고, 받은 건 다�
     const u = new URL(url);
     const id = u.searchParams.get('contentId');
     const common = u.pathname.endsWith('detailCommon2');
-    if (!common) calls.push(id);
-    const item = common
+    const info = u.pathname.endsWith('detailInfo2');
+    if (!common && !info) calls.push(id);
+    const item = info
+      ? [{ infoname: '행사소개', infotext: '소개' }, { infoname: '행사내용', infotext: id === '1' ? '- 개막식<br>- 축하공연: 가수 홍길동' : '' }]
+      : common
       ? { overview: id === '1' ? '가을 국화 축제입니다.<br><br>국화 전시와 체험이 열립니다.' : '' }
       : id === '1' ? { playtime: '10:00~18:00<br>야간 19:00~22:00', usetimefestival: '무료' } : { playtime: '', usetimefestival: '성인 5,000원' };
-    return new Response(JSON.stringify({ response: { header: { resultCode: '0000' }, body: { items: { item: [item] } } } }));
+    return new Response(JSON.stringify({ response: { header: { resultCode: '0000' }, body: { items: { item: Array.isArray(item) ? item : [item] } } } }));
   };
   try {
     const a = await tourapi.addDetails([ev('1'), ev('2'), ev('3')], { key: 'k', cacheFile, budget: 2, log: quiet });
@@ -121,6 +124,7 @@ test('관광공사 소개정보로 시간·요금을 채우고, 받은 건 다�
     assert.equal(a[0].time, '10:00~18:00 / 야간 19:00~22:00');
     assert.equal(a[0].isFree, true);
     assert.equal(a[0].description, '가을 국화 축제입니다.\n국화 전시와 체험이 열립니다.');
+    assert.equal(a[0].program, '- 개막식\n- 축하공연: 가수 홍길동');
     assert.equal(a[1].price, '성인 5,000원');
     assert.equal(a[2].time, '');
     calls.length = 0;

@@ -474,8 +474,26 @@ body[data-season='summer'] {
 .keywords a:hover { border-color: var(--brand); transform: translateY(-1px); }
 .keywords a[aria-current='page'] { border-color: transparent; background: var(--grad); color: #fff; }
 
-/* 행사 소개(개요) */
-.overview { margin: 18px 0; padding: 18px 20px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
-.overview h2 { margin: 0 0 8px; font-size: 17px; font-weight: 800; }
-.overview p { margin: 0 0 10px; line-height: 1.75; color: #3a3442; word-break: keep-all; }
-.overview p:last-child { margin-bottom: 0; }
+/* 행사 내용(프로그램·출연진): 상세 화면에서 가장 눈에 띄게 */
+.program, .subevent { margin: 16px 0; padding: 18px 20px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.program { border: 0; background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--grad) border-box; border: 2px solid transparent; }
+.program h2, .subevent h2 { margin: 0 0 10px; font-size: 18px; font-weight: 900; letter-spacing: -.03em; }
+.program h2::before { content: '🎉 '; }
+.subevent h2 { font-size: 16px; }
+.program ul, .subevent ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.program li, .subevent li { position: relative; padding-left: 16px; line-height: 1.6; word-break: keep-all; }
+.program li::before, .subevent li::before { content: ''; position: absolute; left: 2px; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--brand); }
+.program li.star { padding: 8px 12px 8px 36px; border-radius: 12px; background: var(--brand-soft); font-weight: 800; color: var(--brand-strong); }
+.program li.star::before { content: '🎤'; width: auto; height: auto; background: none; left: 10px; top: 8px; }
+
+/* 행사 소개(개요): 접어 두고 앞부분만 미리 보여 준다 */
+.overview { margin: 16px 0; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.overview summary { display: flex; align-items: center; gap: 10px; padding: 14px 18px; cursor: pointer; list-style: none; }
+.overview summary::-webkit-details-marker { display: none; }
+.overview summary b { flex: 0 0 auto; font-size: 15px; }
+.overview summary::after { content: '펼치기 ▾'; flex: 0 0 auto; margin-left: auto; font-size: 12px; font-weight: 700; color: var(--muted); }
+.overview[open] summary::after { content: '접기 ▴'; }
+.ov-preview { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 13px; color: var(--muted); }
+.overview[open] .ov-preview { display: none; }
+.overview p { margin: 0 18px 10px; line-height: 1.75; color: #3a3442; word-break: keep-all; }
+.overview p:last-child { margin-bottom: 16px; }
