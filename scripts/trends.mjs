@@ -85,3 +85,78 @@ export async function loadHotFestivals({ events, today, env = process.env, fetch
   log.log(`[trend] 최근 블로그 글이 있는 축제 ${scores.length}개`);
   return scores;
 }
+
+// ---- 한국관광공사 '대한민국 구석구석 축제'(kfes) 첫 화면의 "사람들이 많이 본 축제" 순위 ----
+// 공개 API가 없어 공개된 첫 화면 HTML에서 순위 목록만 읽는다. 화면 구조가 바뀌어 못 읽으면 빈 목록을 돌려주고,
+// 그때는 블로그 글 수 순위만 쓴다.
+const KFES_URL = 'https://korean.visitkorea.or.kr/kfes/main/main.do';
+const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+
+const textOf = (html) =>
+  String(html || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+// "많이 본 축제" 제목 뒤에 나오는 축제 상세 링크를 순서대로 최대 10개. [{ rank, name }]
+export function parseKfesRanking(html) {
+  const at = String(html || '').indexOf('많이 본 축제');
+  if (at < 0) return [];
+  const out = [];
+  const seen = new Set();
+  for (const m of html.slice(at).matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi)) {
+    const id = m[1].match(UUID)?.[0];
+    if (!id || seen.has(id)) continue;
+    // 링크 안의 순위 숫자·메달 그림은 빼고 축제 이름만 남긴다.
+    const name = textOf(m[2]).replace(/^\d+\s*/, '').replace(/\s*\.{3}$|…$/, '');
+    if (!name) continue;
+    seen.add(id);
+    out.push({ rank: out.length + 1, name });
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
+const key = (s) => searchKeyword(s).replace(/\s+/g, '');
+
+// kfes 축제 이름을 우리 행사와 맞춘다. 같은 이름 → 한쪽이 다른 쪽을 품는 이름(4글자 이상) 순으로 찾는다.
+// 화면에서 잘린 이름("세계문화유산 화순 고인…")도 앞부분으로 맞춘다.
+export function matchKfes(ranking, events, today) {
+  const list = events.filter((e) => e.category === 'festival' && e.endDate >= today);
+  const used = new Set();
+  const out = [];
+  for (const r of ranking) {
+    const k = key(r.name);
+    if (k.length < 2) continue;
+    const ok = (e) => !used.has(e.id);
+    const hit =
+      list.find((e) => ok(e) && key(e.title) === k) ||
+      (k.length >= 4 && list.find((e) => ok(e) && (key(e.title).includes(k) || k.includes(key(e.title)) || key(e.title).startsWith(k))));
+    if (!hit) continue;
+    used.add(hit.id);
+    out.push({ id: hit.id, score: 11 - r.rank, by: 'kfes' });
+  }
+  return out;
+}
+
+export async function loadKfesRanking({ events, today, env = process.env, fetchImpl = fetch, log = console }) {
+  try {
+    const res = await fetchImpl(env.KFES_URL || KFES_URL, { headers: { 'User-Agent': 'Mozilla/5.0 (festanow.com)' } });
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const ranking = parseKfesRanking(await res.text());
+    const matched = matchKfes(ranking, events, today);
+    log.log(`[trend] 관광공사 많이 본 축제 ${ranking.length}개 중 ${matched.length}개 연결: ${ranking.map((r) => r.name).join(', ')}`);
+    return matched;
+  } catch (err) {
+    log.error(`[trend] 관광공사 순위 실패: ${err.message}`);
+    return [];
+  }
+}
+
+// 관광공사 순위를 앞에, 그 뒤로 블로그 글 수 순위(지역 페이지에서 쓸 축제)를 잇는다.
+export function mergeHot(kfes, blog) {
+  const ids = new Set(kfes.map((h) => h.id));
+  return [...kfes, ...blog.filter((h) => !ids.has(h.id)).map((h) => ({ ...h, by: 'blog' }))];
+}

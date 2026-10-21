@@ -6,7 +6,7 @@ import path from 'node:path';
 import config from '../site.config.mjs';
 import { loadAllEvents } from './sources/index.mjs';
 import { KEYWORDS, eventKeywords } from '../src/assets/lib/keywords.js';
-import { loadHotFestivals } from './trends.mjs';
+import { loadHotFestivals, loadKfesRanking, mergeHot } from './trends.mjs';
 import { appPage, eventPage, notFoundPage } from './templates.mjs';
 import { todayInSeoul, sortEvents, filterEvents, CATEGORIES } from '../src/assets/lib/events.js';
 import { REGIONS } from '../src/assets/lib/regions.js';
@@ -38,10 +38,15 @@ async function copyVendor() {
 export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(), env = process.env, fetchImpl } = {}) {
   const { events, sources } = await loadAllEvents({ today, env });
   for (const e of events) e.tags = eventKeywords(e);
-  // 지금 많이 찾는 축제(최근 7일 다음 블로그 글 수). 키가 없으면 빈 목록이라 화면에서 줄이 숨는다.
-  const hot = await loadHotFestivals({ events, today, env, ...(fetchImpl ? { fetchImpl } : {}) });
+  // 지금 많이 찾는 축제: 한국관광공사 '많이 본 축제' 순위를 앞에, 그 뒤로 최근 7일 블로그 글 수 순위.
+  // 둘 다 못 받으면 빈 목록이라 화면에서 줄이 숨는다. 샘플 데이터로 빌드할 때는 관광공사 순위를 읽지 않는다.
+  const opts = { events, today, env, ...(fetchImpl ? { fetchImpl } : {}) };
+  const kfesHot = sources.includes('sample') ? [] : await loadKfesRanking(opts);
+  const kfesIds = new Set(kfesHot.map((h) => h.id));
+  const hot = mergeHot(kfesHot, await loadHotFestivals(opts));
+  if (kfesHot.length) sources.push('kfes');
+  if (hot.length > kfesHot.length) sources.push('trend');
   if (hot.length) {
-    sources.push('trend');
     const byId = new Map(events.map((e) => [e.id, e]));
     console.log(`[trend] 상위: ${hot.slice(0, 10).map((h) => `${byId.get(h.id)?.title}(${h.score})`).join(', ')}`);
   }
@@ -88,6 +93,7 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
         events: list,
         keywordEvents: upcoming,
         hot: pickHot(hot, events, { region: f.region || '', today }),
+        kfesIds,
         today,
         sources,
         noindex: noindex || empty,
