@@ -11,7 +11,9 @@ const presetRegion = document.body.dataset.presetRegion || '';
 // 검색어 맞춤 페이지(서울 축제, 이번 주말 등)는 종류·기간이 미리 골라진 채로 열린다.
 const presetCategory = document.body.dataset.presetCategory || '';
 const presetPeriod = document.body.dataset.presetPeriod || 'all';
-const hasPreset = Boolean(presetRegion || presetCategory || presetPeriod !== 'all');
+// 추천 키워드 페이지(#가을꽃 등)는 키워드를 유지한 채 화면 안에서 지역·기간·종류를 고른다.
+const presetTag = document.body.dataset.presetTag || '';
+const hasPreset = Boolean(presetRegion || presetCategory || presetPeriod !== 'all') && !presetTag;
 const $ = (sel) => document.querySelector(sel);
 
 const today = todayInSeoul();
@@ -31,6 +33,7 @@ function readState() {
     region: presetRegion || p.get('region') || '',
     category: p.has('cat') ? (p.get('cat') === 'all' ? '' : p.get('cat')) : presetCategory,
     period: p.get('period') || presetPeriod,
+    tag: presetTag,
     freeOnly: p.get('free') === '1',
     view: p.get('view') === 'map' ? 'map' : 'list',
   };
