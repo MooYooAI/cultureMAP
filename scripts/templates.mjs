@@ -90,7 +90,7 @@ function picker(id, label, items, selected) {
 
 // 첫 화면과 지역별 페이지가 같이 쓰는 지도+목록 화면.
 // region·category·period가 있으면 "서울 축제", "이번 주말"처럼 조건이 미리 걸린 검색어 맞춤 페이지가 된다.
-export function appPage({ root, path, region = '', category = '', period = 'all', tag = '', events, hot = [], keywordEvents = events, today, sources, noindex }) {
+export function appPage({ root, path, region = '', category = '', period = 'all', tag = '', events, hot = [], kfesIds = new Set(), keywordEvents = events, today, sources, noindex }) {
   const r = region ? REGION_BY_SLUG[region] : null;
   const heading = listHeading({ region, category, period, tag, today });
   const isHome = !region && !category && period === 'all' && !tag;
@@ -117,7 +117,7 @@ export function appPage({ root, path, region = '', category = '', period = 'all'
     ${isHome || tag ? keywordNav({ root, events: keywordEvents, today, current: tag }) : ''}
     ${tag ? '' : topicNav({ root, region, category, period })}
     <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
-      <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">블로그 글 수 · 최근 7일</span></header>
+      <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">${hotLabel(hot, kfesIds)}</span></header>
       <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
     </section>
     <div id="wx-strip" class="wx-strip" hidden></div>
@@ -188,6 +188,14 @@ function landingDescription({ r, category, period, tag, today }) {
         ? `${Number(today.slice(5, 7))}월 한 달 동안 `
         : '';
   return `${when}${where} 열리는 ${what} 일정을 지도와 목록으로 확인하세요. 진행 중인 행사, 곧 시작하는 행사, 무료 행사까지 한눈에 볼 수 있어요.`;
+}
+
+// 순위 출처 표시: 모두 관광공사 순위면 그렇게, 블로그 순위가 섞이면 둘 다 적는다.
+function hotLabel(hot, kfesIds) {
+  const k = hot.filter((e) => kfesIds.has(e.id)).length;
+  if (k && k === hot.length) return '한국관광공사 · 많이 본 순';
+  if (k) return '관광공사 많이 본 순 · 블로그 글 수';
+  return '블로그 글 수 · 최근 7일';
 }
 
 // 추천 축제 키워드(한국관광공사 축제 페이지처럼 계절에 맞는 주제). 지금 보는 키워드는 강조한다.

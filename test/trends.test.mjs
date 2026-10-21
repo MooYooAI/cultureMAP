@@ -68,3 +68,26 @@ test('지역별로 거르고 끝난 축제는 뺀다', () => {
   assert.deepEqual(pickHot(hot, events, { region: 'seoul', today: '2026-10-18' }).map((e) => e.id), ['c']);
   assert.match(renderHot(pickHot(hot, events, { today: '2026-10-18' }), { today: '2026-10-18' }), /hot-rank">2</);
 });
+
+test('관광공사 많이 본 축제: 순위 목록을 읽어 우리 행사와 맞춘다', async () => {
+  const { parseKfesRanking, matchKfes, mergeHot } = await import('../scripts/trends.mjs');
+  const id = (n) => `aaaaaaaa-bbbb-cccc-dddd-${String(n).padStart(12, '0')}`;
+  const html = `<a href="/kfes/detail/fstvlDetail.do?fstvlCntntsId=${id(9)}">맨 위 배너 축제</a>
+    <h2>사람들이<br><strong>많이 본 축제</strong></h2><ul>
+    <li><a href="/kfes/detail/fstvlDetail.do?fstvlCntntsId=${id(1)}&cntntsNm=대전빵축제"><img alt=""><span>1</span> 대전 빵 축제</a></li>
+    <li><a href="javascript:void(0)" onclick="go('${id(2)}')"><span class="num">2</span><span>진주남강유등축제</span></a></li>
+    <li><a href="/kfes/detail/fstvlDetail.do?fstvlCntntsId=${id(3)}">세계문화유산 화순 고인…</a></li>
+    <li><a href="/kfes/detail/fstvlDetail.do?fstvlCntntsId=${id(4)}">없는 축제</a></li></ul>`;
+  const ranking = parseKfesRanking(html);
+  assert.deepEqual(ranking.map((r) => r.name), ['대전 빵 축제', '진주남강유등축제', '세계문화유산 화순 고인', '없는 축제']);
+  const events = [
+    fest('p', '2026 대전 빵축제', '2026-10-20', '2026-10-26'),
+    fest('q', '제76회 진주남강유등축제', '2026-10-10', '2026-10-25'),
+    fest('r', '세계문화유산 화순 고인돌 가을꽃 축제', '2026-10-16', '2026-10-25'),
+    fest('s', '끝난 축제', '2026-09-01', '2026-09-02'),
+  ];
+  const kfes = matchKfes(ranking, events, '2026-10-21');
+  assert.deepEqual(kfes.map((h) => h.id), ['p', 'q', 'r']);
+  assert.deepEqual(mergeHot(kfes, [{ id: 'q', score: 50 }, { id: 'z', score: 3 }]).map((h) => `${h.id}:${h.by}`), ['p:kfes', 'q:kfes', 'r:kfes', 'z:blog']);
+  assert.deepEqual(parseKfesRanking('<html>바뀐 화면</html>'), []);
+});
