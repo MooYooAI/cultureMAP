@@ -172,12 +172,14 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 .card:hover::before, .card:hover::after, .card:focus-within::before, .card:focus-within::after { border-color: rgba(255, 79, 46, .5); }
 .stub {
   flex: 0 0 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-  min-height: 72px; border-radius: 14px; background: var(--violet-soft); color: var(--violet);
+  min-height: 72px; border-radius: 14px; color: #fff; background: var(--grad); background-size: 150% 150%;
+  box-shadow: 0 6px 16px rgba(255, 79, 46, .22);
   font-variant-numeric: tabular-nums;
 }
-/* 날짜 칸 색은 종류가 아니라 '얼마나 급한지': 진행 중(마감일)은 불꽃, 오늘 마지막은 잉크+불꽃, 곧 시작은 보라 */
-.card[data-status='ongoing'] .stub { background: var(--brand-soft); color: var(--brand-strong); }
-.card[data-status='last'] .stub { background: #17141f; color: #fff; }
+/* 날짜 칸도 '이번 주말 어디 가지?' 배지와 같은 그라데이션. 곧 시작은 보라 쪽, 진행 중은 주황 쪽을 보여 주고, 오늘 마지막은 색이 흐른다 */
+.card[data-status='upcoming'] .stub { background-position: 100% 50%; box-shadow: 0 6px 16px rgba(91, 61, 245, .22); }
+.card[data-status='ongoing'] .stub { background-position: 0% 50%; }
+.card[data-status='last'] .stub { animation: flow 4s ease-in-out infinite; }
 .card[data-status='last'] .stub-w { color: var(--spark); }
 .stub-m { font-size: 12px; font-weight: 700; }
 .stub-d { font-size: 30px; font-weight: 900; letter-spacing: -.04em; line-height: 1; }
@@ -423,7 +425,7 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 @keyframes live { 0% { box-shadow: 0 0 0 0 rgba(255, 79, 46, .7); } 70% { box-shadow: 0 0 0 6px rgba(255, 79, 46, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 79, 46, 0); } }
 @keyframes urgent { 0%, 100% { opacity: 1; } 50% { opacity: .65; } }
 @media (prefers-reduced-motion: reduce) {
-  .hook, .hook::after, .hot, .brand img, .cards > .card, .hot-list li, .badge.status-ongoing::before, .badge.status-last { animation: none; }
+  .hook, .hook::after, .hot, .card[data-status='last'] .stub, .brand img, .cards > .card, .hot-list li, .badge.status-ongoing::before, .badge.status-last { animation: none; }
 }
 
 /* 계절 배경: 계절마다 하늘빛이 바뀌고, 낙엽·눈·꽃잎·반딧불이 화면 위로 천천히 지나간다. 반투명이고 누를 수 없어 읽기와 클릭을 막지 않는다 */
