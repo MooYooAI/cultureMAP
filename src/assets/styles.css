@@ -94,27 +94,28 @@ button, input, select { font: inherit; color: inherit; }
 .link-btn { background: none; border: 0; color: var(--brand-strong); font-weight: 700; cursor: pointer; min-height: 36px; padding: 0 4px; }
 
 /* 지금 많이 찾는 축제 */
-.hot { margin: 0 0 12px; padding: 12px 0 8px; border-radius: var(--radius); background: #17141f; color: #fff; box-shadow: var(--shadow); }
+/* '이번 주말 어디 가지?' 배지와 같은 주황→분홍→보라 그라데이션이 천천히 흐른다 */
+.hot { margin: 0 0 12px; padding: 12px 0 8px; border-radius: var(--radius); background: var(--grad); background-size: 220% 100%; color: #fff; box-shadow: var(--glow); animation: flow 8s ease-in-out infinite; }
 .hot[hidden] { display: none; }
 .hot-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 0 12px; }
 .hot-head h2 { margin: 0; font-size: 16px; font-weight: 800; color: #fff; }
-.hot-sub { font-size: 11px; color: #a9a3b4; white-space: nowrap; }
+.hot-sub { font-size: 11px; color: rgba(255, 255, 255, .8); white-space: nowrap; }
 .hot-list {
   list-style: none; margin: 8px 0 0; padding: 0 12px 2px; display: grid; grid-auto-flow: column; grid-auto-columns: 156px;
   gap: 8px; overflow-x: auto; scrollbar-width: thin; scroll-snap-type: x proximity;
 }
 .hot-item {
-  display: flex; gap: 8px; height: 100%; padding: 8px 10px; border-radius: 14px; background: #24202f; border: 1px solid #353042; color: #fff;
+  display: flex; gap: 8px; height: 100%; padding: 8px 10px; border-radius: 14px; background: rgba(255, 255, 255, .16); border: 1px solid rgba(255, 255, 255, .28); color: #fff; backdrop-filter: blur(6px);
   text-decoration: none; scroll-snap-align: start; transition: transform .15s, border-color .15s;
 }
-.hot-item:hover, .hot-item:focus-visible { transform: translateY(-2px); border-color: var(--brand); }
-.hot-rank { flex: 0 0 auto; font-size: 22px; font-weight: 900; font-style: italic; line-height: 1.1; color: var(--spark); min-width: 16px; text-align: center; }
-.hot-list li:nth-child(n + 4) .hot-rank { color: #7d7689; }
+.hot-item:hover, .hot-item:focus-visible { transform: translateY(-2px); background: rgba(255, 255, 255, .26); border-color: rgba(255, 255, 255, .6); }
+.hot-rank { flex: 0 0 auto; font-size: 22px; font-weight: 900; font-style: italic; line-height: 1.1; color: var(--spark); text-shadow: 0 2px 6px rgba(120, 20, 40, .35); min-width: 16px; text-align: center; }
+.hot-list li:nth-child(n + 4) .hot-rank { color: rgba(255, 255, 255, .75); }
 .hot-body { min-width: 0; display: grid; gap: 2px; }
 .hot-title { font-size: 14px; font-weight: 700; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.hot-meta { font-size: 11px; color: #a9a3b4; line-height: 1.35; }
-.hot-status { color: #ff8a70; font-weight: 700; }
-.hot-status.status-upcoming { color: #a996ff; }
+.hot-meta { font-size: 11px; color: rgba(255, 255, 255, .82); line-height: 1.35; }
+.hot-status { color: #fff; font-weight: 800; }
+.hot-status.status-upcoming { color: #fff; }
 
 /* 목록·지도 */
 .layout { padding: 0 16px 96px; }
@@ -171,12 +172,14 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 .card:hover::before, .card:hover::after, .card:focus-within::before, .card:focus-within::after { border-color: rgba(255, 79, 46, .5); }
 .stub {
   flex: 0 0 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
-  min-height: 72px; border-radius: 14px; background: var(--violet-soft); color: var(--violet);
+  min-height: 72px; border-radius: 14px; color: #fff; background: var(--grad); background-size: 150% 150%;
+  box-shadow: 0 6px 16px rgba(255, 79, 46, .22);
   font-variant-numeric: tabular-nums;
 }
-/* 날짜 칸 색은 종류가 아니라 '얼마나 급한지': 진행 중(마감일)은 불꽃, 오늘 마지막은 잉크+불꽃, 곧 시작은 보라 */
-.card[data-status='ongoing'] .stub { background: var(--brand-soft); color: var(--brand-strong); }
-.card[data-status='last'] .stub { background: #17141f; color: #fff; }
+/* 날짜 칸도 '이번 주말 어디 가지?' 배지와 같은 그라데이션. 곧 시작은 보라 쪽, 진행 중은 주황 쪽을 보여 주고, 오늘 마지막은 색이 흐른다 */
+.card[data-status='upcoming'] .stub { background-position: 100% 50%; box-shadow: 0 6px 16px rgba(91, 61, 245, .22); }
+.card[data-status='ongoing'] .stub { background-position: 0% 50%; }
+.card[data-status='last'] .stub { animation: flow 4s ease-in-out infinite; }
 .card[data-status='last'] .stub-w { color: var(--spark); }
 .stub-m { font-size: 12px; font-weight: 700; }
 .stub-d { font-size: 30px; font-weight: 900; letter-spacing: -.04em; line-height: 1; }
@@ -232,23 +235,23 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 /* 지도 표시: 이모지 말풍선 핀 */
 .pin-wrap { background: none; border: 0; }
 .pin {
-  position: relative; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 50%;
-  background: var(--festival); border: 3px solid #fff; box-shadow: 0 4px 10px rgba(61, 43, 58, .25);
-  transform-origin: 50% 100%; transition: transform .15s;
+  /* 로고 핀처럼 끝이 뾰족한 물방울 모양, '이번 주말 어디 가지?' 배지와 같은 그라데이션 */
+  position: relative; display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50% 50% 50% 4px;
+  background: var(--grad); background-size: 160% 160%; border: 3px solid #fff;
+  box-shadow: 0 6px 14px rgba(255, 79, 46, .35);
+  transform: rotate(-45deg); transform-origin: 50% 50%; transition: transform .15s;
 }
-.pin::after {
-  content: ''; position: absolute; left: 50%; bottom: -8px; transform: translateX(-50%);
-  border: 6px solid transparent; border-top: 7px solid #fff; border-bottom: 0;
-}
-.pin-emoji { font-size: 19px; line-height: 1; }
-.pin-performance { background: var(--performance); }
-.pin-exhibition { background: var(--exhibition); }
-.pin-event { background: var(--event); }
-.pin-wrap:hover .pin { transform: scale(1.12); }
+.pin-emoji { font-size: 18px; line-height: 1; transform: rotate(45deg); }
+.pin-festival { background-position: 0% 50%; }
+.pin-event { background-position: 30% 50%; }
+.pin-exhibition { background-position: 70% 50%; box-shadow: 0 6px 14px rgba(255, 46, 126, .35); }
+.pin-performance { background-position: 100% 50%; box-shadow: 0 6px 14px rgba(91, 61, 245, .35); }
+.pin-wrap:hover .pin { transform: rotate(-45deg) scale(1.12); }
 .bubble {
   display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
-  background: #17141f; color: #fff; font-size: 16px; font-weight: 800;
-  border: 4px solid rgba(255, 255, 255, .9); box-shadow: 0 0 0 4px rgba(255, 79, 46, .35), 0 6px 14px rgba(23, 20, 31, .3);
+  background: var(--grad); background-size: 200% 200%; color: #fff; font-size: 16px; font-weight: 900;
+  border: 3px solid #fff; box-shadow: 0 0 0 5px rgba(255, 79, 46, .18), 0 6px 16px rgba(255, 46, 126, .35);
+  animation: flow 6s ease-in-out infinite;
 }
 
 /* 목록에 마우스를 올린 행사: 통통 튀고 물결이 퍼진다 */
@@ -262,12 +265,20 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
   from { transform: translateY(0) scale(1.15); }
   to { transform: translateY(-14px) scale(1.3); }
 }
+.is-hot .pin { animation-name: hop-pin; }
+.is-hot .pin::before { border-radius: 50% 50% 50% 4px; }
+@keyframes hop-pin {
+  from { transform: translateY(0) rotate(-45deg) scale(1.15); }
+  to { transform: translateY(-14px) rotate(-45deg) scale(1.3); }
+}
 @keyframes ripple {
   from { opacity: .9; transform: scale(.8); }
   to { opacity: 0; transform: scale(1.9); }
 }
 @media (prefers-reduced-motion: reduce) {
   .is-hot .pin, .is-hot .bubble { animation: none; transform: scale(1.3); }
+  .is-hot .pin { transform: rotate(-45deg) scale(1.3); }
+  .bubble { animation: none; }
   .is-hot .pin::before, .is-hot .bubble::before { animation: none; opacity: 1; }
 }
 .leaflet-tile-pane { filter: saturate(.45) brightness(1.06) contrast(.92); } /* OSM의 산·숲 색을 옅게 눌러 단순하게 */
@@ -422,7 +433,7 @@ img.thumb { object-fit: contain; } /* 공공누리 제3유형(변경금지) 사�
 @keyframes live { 0% { box-shadow: 0 0 0 0 rgba(255, 79, 46, .7); } 70% { box-shadow: 0 0 0 6px rgba(255, 79, 46, 0); } 100% { box-shadow: 0 0 0 0 rgba(255, 79, 46, 0); } }
 @keyframes urgent { 0%, 100% { opacity: 1; } 50% { opacity: .65; } }
 @media (prefers-reduced-motion: reduce) {
-  .hook, .hook::after, .brand img, .cards > .card, .hot-list li, .badge.status-ongoing::before, .badge.status-last { animation: none; }
+  .hook, .hook::after, .hot, .card[data-status='last'] .stub, .brand img, .cards > .card, .hot-list li, .badge.status-ongoing::before, .badge.status-last { animation: none; }
 }
 
 /* 계절 배경: 계절마다 하늘빛이 바뀌고, 낙엽·눈·꽃잎·반딧불이 화면 위로 천천히 지나간다. 반투명이고 누를 수 없어 읽기와 클릭을 막지 않는다 */
