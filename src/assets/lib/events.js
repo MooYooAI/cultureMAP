@@ -69,7 +69,7 @@ function normalizeText(s) {
 }
 
 export function filterEvents(events, filters = {}, today = todayInSeoul()) {
-  const { region = '', category = '', period = 'all', q = '', freeOnly = false } = filters;
+  const { region = '', category = '', period = 'all', q = '', freeOnly = false, tag = '' } = filters;
   const range = periodRange(period, today);
   const query = normalizeText(q);
   return events.filter((e) => {
@@ -77,6 +77,7 @@ export function filterEvents(events, filters = {}, today = todayInSeoul()) {
     if (region && e.region !== region) return false;
     if (category && e.category !== category) return false;
     if (freeOnly && !e.isFree) return false;
+    if (tag && !(e.tags || []).includes(tag)) return false;
     if (range && (e.startDate > range.to || e.endDate < range.from)) return false;
     if (query) {
       const hay = normalizeText([e.title, e.venue, e.city, e.address, e.description].join(' '));

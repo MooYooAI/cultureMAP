@@ -474,3 +474,20 @@ body[data-season='summer'] .sp i { border-radius: 50%; background: #ffd75e; box-
 @keyframes sway { from { transform: translateX(calc(var(--sway) * -1)); } to { transform: translateX(var(--sway)); } }
 @keyframes sway-spin { from { transform: translateX(calc(var(--sway) * -1)) rotate(0) rotateX(0); } to { transform: translateX(var(--sway)) rotate(var(--r)) rotateX(60deg); } }
 @keyframes glow { from { transform: translateX(calc(var(--sway) * -.5)); opacity: .2; } to { transform: translateX(calc(var(--sway) * .5)); opacity: 1; } }
+/* 추천 축제 키워드 */
+.keywords { margin: 12px 0 4px; }
+.keywords h2 { margin: 0 0 8px; font-size: 18px; font-weight: 500; letter-spacing: -.03em; }
+.keywords h2 b { font-weight: 900; }
+.keywords ul { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; }
+.keywords a {
+  display: inline-block; padding: 7px 14px; border-radius: 999px; border: 1px solid #c9c1b8; background: var(--surface);
+  color: var(--text); font-size: 14px; font-weight: 700; text-decoration: none; transition: border-color .15s, transform .15s;
+}
+.keywords a:hover { border-color: var(--brand); transform: translateY(-1px); }
+.keywords a[aria-current='page'] { border-color: transparent; background: var(--grad); color: #fff; }
+
+/* 행사 소개(개요) */
+.overview { margin: 18px 0; padding: 18px 20px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.overview h2 { margin: 0 0 8px; font-size: 17px; font-weight: 800; }
+.overview p { margin: 0 0 10px; line-height: 1.75; color: #3a3442; word-break: keep-all; }
+.overview p:last-child { margin-bottom: 0; }

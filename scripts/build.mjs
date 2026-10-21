@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import config from '../site.config.mjs';
 import { loadAllEvents } from './sources/index.mjs';
+import { KEYWORDS, eventKeywords } from '../src/assets/lib/keywords.js';
 import { loadHotFestivals } from './trends.mjs';
 import { appPage, eventPage, notFoundPage } from './templates.mjs';
 import { todayInSeoul, sortEvents, filterEvents, CATEGORIES } from '../src/assets/lib/events.js';
@@ -36,6 +37,7 @@ async function copyVendor() {
 
 export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(), env = process.env, fetchImpl } = {}) {
   const { events, sources } = await loadAllEvents({ today, env });
+  for (const e of events) e.tags = eventKeywords(e);
   // 지금 많이 찾는 축제(최근 7일 다음 블로그 글 수). 키가 없으면 빈 목록이라 화면에서 줄이 숨는다.
   const hot = await loadHotFestivals({ events, today, env, ...(fetchImpl ? { fetchImpl } : {}) });
   if (hot.length) {
@@ -53,7 +55,8 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
 
   await write(
     'data/events.json',
-    JSON.stringify({ generatedAt: new Date().toISOString(), today, sources, events, hot }),
+    // 화면 검색에는 소개글 앞부분이면 충분하다(긴 소개글은 상세 페이지에만 넣어 파일을 가볍게).
+    JSON.stringify({ generatedAt: new Date().toISOString(), today, sources, events: events.map((e) => ({ ...e, description: String(e.description || '').slice(0, 120) })), hot }),
   );
 
   // 목록 페이지: 전국, 지역별, 그리고 검색어 맞춤 페이지(지역×종류, 지역·전국 이번 주말, 종류별, 이번 달).
@@ -63,6 +66,7 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
     { period: 'weekend' },
     { period: 'month' },
     ...Object.keys(CATEGORIES).map((category) => ({ category })),
+    ...KEYWORDS.map((k) => ({ tag: k.slug })),
     ...REGIONS.flatMap((r) => [
       { region: r.slug },
       { region: r.slug, period: 'weekend' },
@@ -82,6 +86,7 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
         path: p,
         ...f,
         events: list,
+        keywordEvents: upcoming,
         hot: pickHot(hot, events, { region: f.region || '', today }),
         today,
         sources,

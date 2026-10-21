@@ -1,4 +1,5 @@
 // 목록 카드 HTML. 빌드 때 미리 그려 넣는 목록(검색엔진용)과 브라우저 화면이 같은 함수를 쓴다.
+import { KEYWORD_BY_SLUG } from './keywords.js';
 import { CATEGORIES, eventStatus, formatRange, distanceKm, hasLocation } from './events.js';
 import { REGION_BY_SLUG } from './regions.js';
 
@@ -64,7 +65,8 @@ export function renderCard(e, { root = './', today, origin = null } = {}) {
 
 // 검색어 맞춤 목록 페이지 주소. 지역·종류·기간 조합마다 빌드가 같은 주소로 페이지를 만든다.
 // (지역+종류, 지역+이번 주말, 종류, 이번 주말, 이번 달, 지역만, 전국)
-export function landingPath({ region = '', category = '', period = 'all' } = {}) {
+export function landingPath({ region = '', category = '', period = 'all', tag = '' } = {}) {
+  if (tag) return `keyword/${tag}/`;
   if (region && category) return `region/${region}/${category}/`;
   if (region && period === 'weekend') return `region/${region}/weekend/`;
   if (region) return `region/${region}/`;
@@ -75,8 +77,9 @@ export function landingPath({ region = '', category = '', period = 'all' } = {})
 }
 
 // 목록 제목: "서울 축제 일정", "서울 이번 주말 축제·공연·전시", "10월 전국 축제·공연·전시 일정".
-export function listHeading({ region = '', category = '', period = 'all', today }) {
+export function listHeading({ region = '', category = '', period = 'all', tag = '', today }) {
   const place = region ? REGION_BY_SLUG[region]?.name || '전국' : '전국';
+  if (tag && KEYWORD_BY_SLUG[tag]) return `${place} #${KEYWORD_BY_SLUG[tag].name} 축제·행사`;
   const what = category ? CATEGORIES[category] : '축제·공연·전시';
   switch (period) {
     case 'today':

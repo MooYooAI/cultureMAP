@@ -4,6 +4,7 @@ import { esc, renderCard, eventPath, placeLabel, landingPath, listHeading } from
 import { CATEGORIES, PERIODS, formatRange, hasLocation, eventStatus, periodRange } from '../src/assets/lib/events.js';
 import { REGIONS, REGION_BY_SLUG } from '../src/assets/lib/regions.js';
 import { renderHot } from '../src/assets/lib/hot.js';
+import { KEYWORDS, KEYWORD_BY_SLUG, seasonalKeywords } from '../src/assets/lib/keywords.js';
 
 function abs(path) {
   return `${config.siteUrl}/${path}`;
@@ -59,6 +60,7 @@ const TOPIC_LINKS = [
   [{ period: 'weekend' }, '이번 주말 축제·공연'],
   [{ period: 'month' }, '이달의 축제·공연·전시'],
   ...Object.entries(CATEGORIES).map(([category, name]) => [{ category }, `전국 ${name}`]),
+  ...KEYWORDS.map((k) => [{ tag: k.slug }, `#${k.name} 축제`]),
 ];
 
 function footer({ root, sources }) {
@@ -88,11 +90,11 @@ function picker(id, label, items, selected) {
 
 // 첫 화면과 지역별 페이지가 같이 쓰는 지도+목록 화면.
 // region·category·period가 있으면 "서울 축제", "이번 주말"처럼 조건이 미리 걸린 검색어 맞춤 페이지가 된다.
-export function appPage({ root, path, region = '', category = '', period = 'all', events, hot = [], today, sources, noindex }) {
+export function appPage({ root, path, region = '', category = '', period = 'all', tag = '', events, hot = [], keywordEvents = events, today, sources, noindex }) {
   const r = region ? REGION_BY_SLUG[region] : null;
-  const heading = listHeading({ region, category, period, today });
-  const isHome = !region && !category && period === 'all';
-  const description = isHome ? config.description : landingDescription({ r, category, period, today });
+  const heading = listHeading({ region, category, period, tag, today });
+  const isHome = !region && !category && period === 'all' && !tag;
+  const description = isHome ? config.description : landingDescription({ r, category, period, tag, today });
   const title = isHome ? `${config.siteName} - ${config.tagline}` : period === 'weekend' ? `${heading} (${weekendLabel(today)})` : heading;
   const list = events.slice(0, 60).map((e) => renderCard(e, { root, today })).join('\n');
   // 검색창 옆에 지역·기간·종류 고르는 칸을 한 줄로 둔다(모바일은 검색창이 접혀 세 칸만 보인다).
@@ -112,7 +114,8 @@ export function appPage({ root, path, region = '', category = '', period = 'all'
   <section class="list-pane" aria-labelledby="heading">
     <h1 id="heading"${isHome ? ' class="sr-only"' : ''}>${esc(heading)}</h1>
     <p id="count" class="count" aria-live="polite">${events.length}개 행사</p>
-    ${topicNav({ root, region, category, period })}
+    ${isHome || tag ? keywordNav({ root, events: keywordEvents, today, current: tag }) : ''}
+    ${tag ? '' : topicNav({ root, region, category, period })}
     <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
       <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">블로그 글 수 · 최근 7일</span></header>
       <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
@@ -165,7 +168,7 @@ ${list}
     noindex,
     sources,
     search: true,
-    bodyAttrs: `data-page="app" data-preset-region="${region}" data-preset-category="${category}" data-preset-period="${period}"`,
+    bodyAttrs: `data-page="app" data-preset-region="${region}" data-preset-category="${category}" data-preset-period="${period}" data-preset-tag="${tag}"`,
   });
 }
 
@@ -174,7 +177,8 @@ function weekendLabel(today) {
   return formatRange(from, to);
 }
 
-function landingDescription({ r, category, period, today }) {
+function landingDescription({ r, category, period, tag, today }) {
+  if (tag) return `${KEYWORD_BY_SLUG[tag].name} 테마로 고른 전국 축제·행사 일정을 지도와 목록으로 확인하세요. 지금 열리는 행사와 곧 시작하는 행사를 한눈에 볼 수 있어요.`;
   const where = r ? `${r.fullName}에서` : '전국에서';
   const what = category ? CATEGORIES[category] : '축제, 공연, 전시';
   const when =
@@ -184,6 +188,16 @@ function landingDescription({ r, category, period, today }) {
         ? `${Number(today.slice(5, 7))}월 한 달 동안 `
         : '';
   return `${when}${where} 열리는 ${what} 일정을 지도와 목록으로 확인하세요. 진행 중인 행사, 곧 시작하는 행사, 무료 행사까지 한눈에 볼 수 있어요.`;
+}
+
+// 추천 축제 키워드(한국관광공사 축제 페이지처럼 계절에 맞는 주제). 지금 보는 키워드는 강조한다.
+function keywordNav({ root, events, today, current }) {
+  const list = seasonalKeywords(events, today);
+  if (current && !list.some((k) => k.slug === current)) list.unshift({ ...KEYWORD_BY_SLUG[current], count: 0 });
+  if (!list.length) return '';
+  return `<nav class="keywords" aria-labelledby="kw-title"><h2 id="kw-title">추천 축제 <b>키워드</b></h2><ul>${list
+    .map((k) => `<li><a href="${root}${landingPath({ tag: k.slug })}"${k.slug === current ? ' aria-current="page"' : ''}>#${esc(k.name)}</a></li>`)
+    .join('')}</ul></nav>`;
 }
 
 // 목록 위 바로가기: 지금 페이지와 이웃한 검색어 맞춤 페이지(같은 지역의 종류별, 이번 주말)를 잇는다.
@@ -239,7 +253,14 @@ export function eventPage({ e, related, today, sources, noindex }) {
   const status = eventStatus(e, today);
   const ended = status.key === 'ended';
   const dateText = formatRange(e.startDate, e.endDate, true);
-  const description = `${dateText} ${placeLabel(e)}. ${e.description || `${r.name}에서 열리는 ${CATEGORIES[e.category]} 정보와 위치를 확인하세요.`}`;
+  const summary = e.description ? e.description.replace(/\s+/g, ' ').slice(0, 110) + (e.description.length > 110 ? '…' : '') : '';
+  const description = `${dateText} ${placeLabel(e)}. ${summary || `${r.name}에서 열리는 ${CATEGORIES[e.category]} 정보와 위치를 확인하세요.`}`;
+  // 소개글이 짧으면(공연 장르 등) 한 줄로, 길면 '행사 소개' 단락으로 보여 준다.
+  const overview = !e.description
+    ? ''
+    : e.description.length < 20
+      ? `<p class="desc">${esc(e.description)}</p>`
+      : `<section class="overview" aria-labelledby="ov-title"><h2 id="ov-title">행사 소개</h2>${e.description.split(/\n+/).map((x) => x.trim()).filter(Boolean).map((x) => `<p>${esc(x)}</p>`).join('')}</section>`;
   const mapQuery = encodeURIComponent(`${e.venue} ${e.address || r.name}`.trim());
   const kakao = hasLocation(e)
     ? `https://map.kakao.com/link/to/${encodeURIComponent(e.venue || e.title)},${e.lat},${e.lng}`
@@ -263,7 +284,7 @@ export function eventPage({ e, related, today, sources, noindex }) {
     <h1>${esc(e.title)}</h1>
     ${image}
     <dl class="info">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
-    ${e.description ? `<p class="desc">${esc(e.description)}</p>` : ''}
+    ${overview}
     <div class="actions">
       <a class="btn primary" href="${esc(kakao)}" target="_blank" rel="noopener">카카오맵 길찾기</a>
       <a class="btn" href="${esc(naver)}" target="_blank" rel="noopener">네이버 지도</a>
