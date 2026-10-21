@@ -172,6 +172,19 @@ ${list}
   });
 }
 
+// 행사 내용 목록: 한 줄이 한 항목. 줄 앞의 -, ·, ○, ▶ 같은 표시는 떼고, 공연·출연 줄은 🎤로 강조한다.
+const STAR_LINE = /공연|출연|가수|초대|콘서트|라인업|버스킹|밴드|DJ|뮤지컬|마술|퍼포먼스|쇼\b/i;
+function programBlock(title, text, cls) {
+  const items = String(text || '')
+    .split(/\n+/)
+    .map((x) => x.replace(/^[\s\-–·•○●◎◇◆□■▶▷►※*]+/, '').trim())
+    .filter(Boolean);
+  if (!items.length) return '';
+  return `<section class="${cls}" aria-label="${title}"><h2>${title}</h2><ul>${items
+    .map((x) => `<li${STAR_LINE.test(x) ? ' class="star"' : ''}>${esc(x)}</li>`)
+    .join('')}</ul></section>`;
+}
+
 function weekendLabel(today) {
   const { from, to } = periodRange('weekend', today);
   return formatRange(from, to);
@@ -263,12 +276,19 @@ export function eventPage({ e, related, today, sources, noindex }) {
   const dateText = formatRange(e.startDate, e.endDate, true);
   const summary = e.description ? e.description.replace(/\s+/g, ' ').slice(0, 110) + (e.description.length > 110 ? '…' : '') : '';
   const description = `${dateText} ${placeLabel(e)}. ${summary || `${r.name}에서 열리는 ${CATEGORIES[e.category]} 정보와 위치를 확인하세요.`}`;
-  // 소개글이 짧으면(공연 장르 등) 한 줄로, 길면 '행사 소개' 단락으로 보여 준다.
+  // 행사 내용(프로그램·출연진)이 가장 중요해서 크게 보여 주고, 긴 개요는 접어 둔다.
   const overview = !e.description
     ? ''
     : e.description.length < 20
       ? `<p class="desc">${esc(e.description)}</p>`
-      : `<section class="overview" aria-labelledby="ov-title"><h2 id="ov-title">행사 소개</h2>${e.description.split(/\n+/).map((x) => x.trim()).filter(Boolean).map((x) => `<p>${esc(x)}</p>`).join('')}</section>`;
+      : `<details class="overview"><summary><b>행사 소개</b><span class="ov-preview">${esc(e.description.replace(/\s+/g, ' ').slice(0, 60))}…</span></summary>${e.description
+          .split(/\n+/)
+          .map((x) => x.trim())
+          .filter(Boolean)
+          .map((x) => `<p>${esc(x)}</p>`)
+          .join('')}</details>`;
+  const program = programBlock('행사 내용', e.program, 'program');
+  const subevent = programBlock('부대 행사', e.subevent, 'subevent');
   const mapQuery = encodeURIComponent(`${e.venue} ${e.address || r.name}`.trim());
   const kakao = hasLocation(e)
     ? `https://map.kakao.com/link/to/${encodeURIComponent(e.venue || e.title)},${e.lat},${e.lng}`
@@ -291,7 +311,9 @@ export function eventPage({ e, related, today, sources, noindex }) {
     <div class="card-tags"><span class="badge cat-${esc(e.category)}">${esc(CATEGORIES[e.category])}</span><span class="badge status-${status.key}" data-start="${e.startDate}" data-end="${e.endDate}" id="status">${esc(status.label)}</span>${e.isFree ? '<span class="badge free">무료</span>' : ''}</div>
     <h1>${esc(e.title)}</h1>
     ${image}
+    ${program}
     <dl class="info">${rows.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+    ${subevent}
     ${overview}
     <div class="actions">
       <a class="btn primary" href="${esc(kakao)}" target="_blank" rel="noopener">카카오맵 길찾기</a>
