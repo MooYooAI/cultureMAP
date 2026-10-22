@@ -1,8 +1,8 @@
 // 빌드 때 만드는 HTML 페이지 템플릿. root는 페이지 위치에서 사이트 맨 위까지의 상대 경로('./', '../../').
 import config from '../site.config.mjs';
 import { esc, renderCard, eventPath, placeLabel, landingPath, listHeading } from '../src/assets/lib/render.js';
-import { CATEGORIES, PERIODS, formatRange, hasLocation, eventStatus, periodRange } from '../src/assets/lib/events.js';
-import { REGIONS, REGION_BY_SLUG } from '../src/assets/lib/regions.js';
+import { CATEGORIES, PERIODS, formatRange, hasLocation, eventStatus, periodRange, monthRange } from '../src/assets/lib/events.js';
+import { REGIONS, REGION_BY_SLUG, cityLabel } from '../src/assets/lib/regions.js';
 import { renderHot } from '../src/assets/lib/hot.js';
 import { KEYWORDS, KEYWORD_BY_SLUG, seasonalKeywords } from '../src/assets/lib/keywords.js';
 
@@ -13,7 +13,7 @@ function abs(path) {
 // 링크를 카톡·SNS에 공유할 때 보이는 대표 이미지(1200×630). 행사 페이지는 행사 사진이 있으면 그 사진을 쓴다.
 const OG_IMAGE = 'assets/og.png';
 
-export function layout({ root, path, title, description, body, head = '', scripts = '', noindex, sources, bodyAttrs = '', image = '', search = false }) {
+export function layout({ root, path, canonical = path, title, description, body, head = '', scripts = '', noindex, sources, bodyAttrs = '', image = '', search = false }) {
   const fullTitle = title.startsWith(config.siteName) ? title : `${title} | ${config.siteName}`;
   return `<!doctype html>
 <html lang="ko">
@@ -22,7 +22,7 @@ export function layout({ root, path, title, description, body, head = '', script
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(fullTitle)}</title>
 <meta name="description" content="${esc(description)}">
-${noindex ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical" href="${esc(abs(path))}">
+${noindex ? '<meta name="robots" content="noindex">\n' : ''}<link rel="canonical" href="${esc(abs(canonical))}">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="${esc(config.siteName)}">
 <meta property="og:title" content="${esc(fullTitle)}">
@@ -57,11 +57,14 @@ ${scripts}
 
 // 검색엔진이 모든 목록 페이지를 찾아갈 수 있도록 바닥글에 링크를 모아 둔다.
 const TOPIC_LINKS = [
+  [{ near: true }, '내 주변 축제'],
   [{ period: 'weekend' }, '이번 주말 축제·공연'],
   [{ period: 'month' }, '이달의 축제·공연·전시'],
   ...Object.entries(CATEGORIES).map(([category, name]) => [{ category }, `전국 ${name}`]),
   ...KEYWORDS.map((k) => [{ tag: k.slug }, `#${k.name} 축제`]),
 ];
+
+const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 function footer({ root, sources }) {
   const notes = sources.map((s) => config.attributions[s]).filter(Boolean);
@@ -70,9 +73,13 @@ function footer({ root, sources }) {
     <h2>테마별 행사</h2>
     <ul class="region-links">${TOPIC_LINKS.map(([f, t]) => `<li><a href="${root}${landingPath(f)}">${esc(t)}</a></li>`).join('')}</ul>
   </nav>
+  <nav aria-label="월별 축제">
+    <h2>월별 축제</h2>
+    <ul class="region-links">${MONTHS.map((m) => `<li><a href="${root}${landingPath({ month: m })}">${m}월 축제</a></li>`).join('')}</ul>
+  </nav>
   <nav aria-label="지역별 행사">
     <h2>지역별 축제·공연</h2>
-    <ul class="region-links">${REGIONS.map((r) => `<li><a href="${root}region/${r.slug}/">${esc(r.name)}</a></li>`).join('')}</ul>
+    <ul class="region-links">${REGIONS.map((r) => `<li><a href="${root}region/${r.slug}/">${esc(r.searchName)} 축제</a></li>`).join('')}</ul>
   </nav>
   ${notes.map((n) => `<p class="attribution">${esc(n)}</p>`).join('\n  ')}
   <p class="attribution">지도: &copy; OpenStreetMap contributors</p>
@@ -90,12 +97,19 @@ function picker(id, label, items, selected) {
 
 // 첫 화면과 지역별 페이지가 같이 쓰는 지도+목록 화면.
 // region·category·period가 있으면 "서울 축제", "이번 주말"처럼 조건이 미리 걸린 검색어 맞춤 페이지가 된다.
-export function appPage({ root, path, region = '', category = '', period = 'all', tag = '', events, hot = [], kfesIds = new Set(), keywordEvents = events, today, sources, noindex }) {
+// cities: 지역 페이지 아래에 잇는 시·군·구 목록([이름, 행사 수]).
+export function appPage({ root, path, region = '', city = '', category = '', period = 'all', month = 0, tag = '', near = false, events, cities = [], hot = [], kfesIds = new Set(), keywordEvents = events, today, sources, noindex }) {
   const r = region ? REGION_BY_SLUG[region] : null;
-  const heading = listHeading({ region, category, period, tag, today });
-  const isHome = !region && !category && period === 'all' && !tag;
-  const description = isHome ? config.description : landingDescription({ r, category, period, tag, today });
-  const title = isHome ? `${config.siteName} - ${config.tagline}` : period === 'weekend' ? `${heading} (${weekendLabel(today)})` : heading;
+  const f = { region, city, category, period, month, tag, near };
+  const heading = listHeading({ ...f, today });
+  const isHome = !region && !category && period === 'all' && !tag && !month && !near;
+  const description = isHome ? config.description : landingDescription({ r, ...f, today });
+  const title = landingTitle({ r, ...f, heading, isHome, today });
+  // "이달의 행사"는 그달 월별 페이지(10월 축제)와 내용이 같아, 검색엔진에는 월별 페이지를 대표 주소로 알린다.
+  const canonical = !region && !category && period === 'month' ? landingPath({ month: Number(today.slice(5, 7)) }) : path;
+  const intro = near
+    ? `<p class="intro">지금 있는 곳에서 가까운 축제·공연·전시를 가까운 순으로 보여 드려요. 위치 사용을 허용하면 바로 정렬되고, 위치는 이 기기에서만 쓰고 저장하지 않아요.</p>`
+    : '';
   const list = events.slice(0, 60).map((e) => renderCard(e, { root, today })).join('\n');
   // 검색창 옆에 지역·기간·종류 고르는 칸을 한 줄로 둔다(모바일은 검색창이 접혀 세 칸만 보인다).
   const body = `<section class="filters" aria-label="검색 조건">
@@ -112,10 +126,11 @@ export function appPage({ root, path, region = '', category = '', period = 'all'
 </div>
 <main id="main" class="layout" data-view="list">
   <section class="list-pane" aria-labelledby="heading">
-    <h1 id="heading"${isHome ? ' class="sr-only"' : ''}>${esc(heading)}</h1>
-    <p id="count" class="count" aria-live="polite">${events.length}개 행사</p>
+    <h1 id="heading">${esc(heading)}</h1>
+    ${intro}<p id="count" class="count" aria-live="polite">${events.length}개 행사</p>
     ${isHome || tag ? keywordNav({ root, events: keywordEvents, today, current: tag }) : ''}
-    ${tag ? '' : topicNav({ root, region, category, period })}
+    ${tag ? '' : topicNav({ root, ...f, today })}
+    ${cityNav({ root, region, city, cities })}
     <section id="hot" class="hot" aria-labelledby="hot-title"${hot.length ? '' : ' hidden'}>
       <header class="hot-head"><h2 id="hot-title">🔥 지금 많이 찾는 축제</h2><span class="hot-sub">${hotLabel(hot, kfesIds)}</span></header>
       <ol id="hot-list" class="hot-list">${renderHot(hot, { root, today })}</ol>
@@ -160,6 +175,7 @@ ${list}
   return layout({
     root,
     path,
+    canonical,
     title,
     description,
     body,
@@ -168,7 +184,7 @@ ${list}
     noindex,
     sources,
     search: true,
-    bodyAttrs: `data-page="app" data-preset-region="${region}" data-preset-category="${category}" data-preset-period="${period}" data-preset-tag="${tag}"`,
+    bodyAttrs: `data-page="app" data-preset-region="${region}" data-preset-city="${esc(city)}" data-preset-category="${category}" data-preset-period="${period}" data-preset-month="${month || ''}" data-preset-tag="${tag}"${near ? ' data-preset-near="1"' : ''}`,
   });
 }
 
@@ -190,12 +206,34 @@ function weekendLabel(today) {
   return formatRange(from, to);
 }
 
-function landingDescription({ r, category, period, tag, today }) {
+// 검색 결과에 보이는 제목. 사람들이 치는 검색어(전국 축제, 강원도 축제, 11월 축제, 강릉 축제, 내 주변 축제)를 앞에 두고 연도를 붙인다.
+function landingTitle({ r, city, category, period, month, tag, near, heading, isHome, today }) {
+  const year = today.slice(0, 4);
+  if (isHome) return `전국 축제 일정 ${year} · 축제·공연·전시 지도`;
+  if (tag) return heading;
+  if (near) return '내 주변 축제 · 지금 가까운 축제·공연·전시 찾기';
+  const what = category ? CATEGORIES[category] : '축제';
+  if (r && city) return `${cityLabel(r.slug, city)} ${what} 일정 ${year} · ${r.searchName} ${city} 축제·공연·전시`;
+  if (month) {
+    const y = monthRange(month, today).year;
+    return r ? `${y}년 ${month}월 ${r.searchName} 축제 일정 · ${r.fullName} 축제·공연·전시` : `${y}년 ${month}월 축제 일정 · 전국 ${month}월 축제·공연·전시`;
+  }
+  if (period === 'weekend') return `${heading} (${weekendLabel(today)})`;
+  if (period === 'month') return `${Number(today.slice(5, 7))}월 축제 일정 ${year} · 이달의 전국 축제·공연·전시`;
+  if (r && !category) return `${r.searchName} 축제 일정 ${year} · ${r.fullName} 축제·공연·전시`;
+  if (r && category === 'festival') return `${r.searchName} 축제 ${year} · ${r.fullName} 지역 축제 모음`;
+  if (r) return `${r.searchName} ${what} 일정 ${year} · ${r.fullName}`;
+  return `전국 ${what} 일정 ${year}`;
+}
+
+function landingDescription({ r, city, category, period, month, tag, near, today }) {
   if (tag) return `${KEYWORD_BY_SLUG[tag].name} 테마로 고른 전국 축제·행사 일정을 지도와 목록으로 확인하세요. 지금 열리는 행사와 곧 시작하는 행사를 한눈에 볼 수 있어요.`;
-  const where = r ? `${r.fullName}에서` : '전국에서';
+  if (near) return '내 위치에서 가까운 축제, 공연, 전시를 가까운 순으로 찾아보세요. 지금 열리는 행사와 이번 주말 갈 만한 곳, 무료 행사까지 지도와 목록으로 한눈에 볼 수 있어요.';
+  const where = r && city ? `${r.fullName} ${city}에서` : r ? `${r.fullName}(${r.searchName})에서` : '전국에서';
   const what = category ? CATEGORIES[category] : '축제, 공연, 전시';
-  const when =
-    period === 'weekend'
+  const when = month
+    ? `${monthRange(month, today).year}년 ${month}월에 `
+    : period === 'weekend'
       ? `이번 주말(${weekendLabel(today)}) `
       : period === 'month'
         ? `${Number(today.slice(5, 7))}월 한 달 동안 `
@@ -222,16 +260,28 @@ function keywordNav({ root, events, today, current }) {
 }
 
 // 목록 위 바로가기: 지금 페이지와 이웃한 검색어 맞춤 페이지(같은 지역의 종류별, 이번 주말)를 잇는다.
-function topicNav({ root, region, category, period }) {
+// 앞으로 석 달(이번 달 포함)은 월별 페이지로 바로 잇는다.
+function topicNav({ root, region, city, category, period, month, near, today }) {
   const r = region ? REGION_BY_SLUG[region] : null;
-  const place = r ? r.name : '전국';
+  const place = r ? r.searchName : '전국';
+  const m0 = Number(today.slice(5, 7));
+  const months = [0, 1, 2].map((i) => ((m0 - 1 + i) % 12) + 1);
   const links = [
+    ...(r ? [] : [[{ near: true }, '내 주변 축제']]),
     [{ region, period: 'weekend' }, `${place} 이번 주말`],
-    ...(r ? [] : [[{ period: 'month' }, '이달의 행사']]),
+    ...months.map((m) => [{ region, month: m }, `${r ? place + ' ' : ''}${m}월 축제`]),
     ...Object.entries(CATEGORIES).map(([c, name]) => [{ region, category: c }, `${place} ${name}`]),
-  ].filter(([f]) => !((f.category || '') === category && (f.period || 'all') === period));
+  ].filter(([f]) => city || !((f.category || '') === category && (f.period || 'all') === period && (f.month || 0) === month && Boolean(f.near) === near));
   return `<nav class="topic-links" aria-label="바로가기"><ul>${links
     .map(([f, t]) => `<li><a href="${root}${landingPath(f)}">${esc(t)}</a></li>`)
+    .join('')}</ul></nav>`;
+}
+
+// 지역 페이지 아래 시·군·구 바로가기("강릉 축제", "부산 해운대구 축제").
+function cityNav({ root, region, city, cities }) {
+  if (!region || !cities.length) return '';
+  return `<nav class="topic-links city-links" aria-label="시·군·구별 행사"><ul>${cities
+    .map(([c]) => `<li><a href="${root}${landingPath({ region, city: c })}"${c === city ? ' aria-current="page"' : ''}>${esc(cityLabel(region, c))}</a></li>`)
     .join('')}</ul></nav>`;
 }
 

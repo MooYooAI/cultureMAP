@@ -13,7 +13,11 @@ const presetCategory = document.body.dataset.presetCategory || '';
 const presetPeriod = document.body.dataset.presetPeriod || 'all';
 // 추천 키워드 페이지(#가을꽃 등)는 키워드를 유지한 채 화면 안에서 지역·기간·종류를 고른다.
 const presetTag = document.body.dataset.presetTag || '';
-const hasPreset = Boolean(presetRegion || presetCategory || presetPeriod !== 'all') && !presetTag;
+// 월별(11월 축제)·시군구(강릉 축제) 페이지는 그 달·그 시군구를 유지한다. 내 주변 페이지는 열자마자 위치를 묻는다.
+const presetMonth = Number(document.body.dataset.presetMonth) || 0;
+const presetCity = document.body.dataset.presetCity || '';
+const presetNear = document.body.dataset.presetNear === '1';
+const hasPreset = Boolean(presetRegion || presetCategory || presetPeriod !== 'all' || presetMonth) && !presetTag;
 const $ = (sel) => document.querySelector(sel);
 
 const today = todayInSeoul();
@@ -31,6 +35,9 @@ function readState() {
   return {
     q: p.get('q') || '',
     region: presetRegion || p.get('region') || '',
+    city: presetCity,
+    month: presetMonth,
+    near: presetNear,
     category: p.has('cat') ? (p.get('cat') === 'all' ? '' : p.get('cat')) : presetCategory,
     period: p.get('period') || presetPeriod,
     tag: presetTag,
@@ -69,10 +76,7 @@ function current() {
 
 function render({ fit = false } = {}) {
   const list = current();
-  const heading = listHeading({ ...state, today });
-  $('#heading').textContent = heading;
-  // 아무 조건 없는 첫 화면 제목은 로고 옆 문구와 겹쳐서 화면에서는 숨긴다(검색엔진용으로는 남김).
-  $('#heading').classList.toggle('sr-only', heading === listHeading({ today }));
+  $('#heading').textContent = listHeading({ ...state, today });
   $('#count').textContent = `${list.length}개 행사${origin ? ' · 가까운 순' : ''}`;
   $('#list').innerHTML = list.map((e) => renderCard(e, { root, today, origin })).join('');
   $('#empty').hidden = list.length > 0;
@@ -296,7 +300,7 @@ function bind() {
   $('#region').addEventListener('change', (ev) => {
     // 지역·종류별 페이지에서는 같은 종류의 다른 지역 페이지로 이동해 주소(검색 노출용)를 유지한다.
     if (hasPreset) {
-      location.href = root + landingPath({ region: ev.target.value, category: presetCategory, period: presetPeriod });
+      location.href = root + landingPath({ region: ev.target.value, category: presetCategory, period: presetPeriod, month: presetMonth });
       return;
     }
     state.region = ev.target.value;
@@ -316,7 +320,7 @@ function bind() {
     syncControls();
     render({ fit: true });
   });
-  $('#near').addEventListener('click', locate);
+  $('#near').addEventListener('click', () => locate());
   // 모바일: 로고 오른쪽 돋보기를 누르면 검색창이 펼쳐진다(PC는 검색창이 늘 보인다).
   $('#search-toggle')?.addEventListener('click', () => setSearchOpen(!document.body.classList.contains('search-open')));
   $('#q').addEventListener('keydown', (ev) => {
@@ -352,7 +356,8 @@ function setSearchOpen(open, focus = true) {
   if (open && focus) $('#q').focus();
 }
 
-function locate() {
+// auto: 내 주변 페이지가 열릴 때 스스로 부른 경우. 거절해도 알림창 대신 안내 문구만 바꾼다.
+function locate(auto = false) {
   const btn = $('#near');
   if (origin) {
     origin = null;
@@ -362,6 +367,7 @@ function locate() {
     return;
   }
   if (!navigator.geolocation) {
+    if (auto) return;
     alert('이 브라우저에서는 위치를 사용할 수 없어요.');
     return;
   }
@@ -375,6 +381,10 @@ function locate() {
     },
     () => {
       btn.textContent = '📍 내 주변 순으로';
+      if (auto) {
+        $('#count').textContent = `${current().length}개 행사 · 위치를 허용하면 가까운 순으로 보여 드려요`;
+        return;
+      }
       alert('위치를 가져오지 못했어요. 브라우저의 위치 권한을 확인해 주세요.');
     },
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 600000 },
@@ -398,6 +408,7 @@ async function init() {
   // Leaflet(defer)은 이 모듈보다 먼저 실행되지만, 혹시 늦게 오면 load 후에 지도를 그린다.
   if (window.L) render({ fit: true });
   else window.addEventListener('load', () => render({ fit: true }), { once: true });
+  if (presetNear) locate(true);
 }
 
 init();

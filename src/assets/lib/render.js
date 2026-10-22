@@ -1,7 +1,7 @@
 // 목록 카드 HTML. 빌드 때 미리 그려 넣는 목록(검색엔진용)과 브라우저 화면이 같은 함수를 쓴다.
 import { KEYWORD_BY_SLUG } from './keywords.js';
 import { CATEGORIES, eventStatus, formatRange, distanceKm, hasLocation } from './events.js';
-import { REGION_BY_SLUG } from './regions.js';
+import { REGION_BY_SLUG, cityLabel } from './regions.js';
 
 export function esc(s) {
   return String(s ?? '')
@@ -64,9 +64,14 @@ export function renderCard(e, { root = './', today, origin = null } = {}) {
 }
 
 // 검색어 맞춤 목록 페이지 주소. 지역·종류·기간 조합마다 빌드가 같은 주소로 페이지를 만든다.
-// (지역+종류, 지역+이번 주말, 종류, 이번 주말, 이번 달, 지역만, 전국)
-export function landingPath({ region = '', category = '', period = 'all', tag = '' } = {}) {
+// (지역+시군구, 지역+월, 지역+종류, 지역+이번 주말, 월, 종류, 이번 주말, 이번 달, 내 주변, 지역만, 전국)
+// 시군구 이름은 한글 그대로 쓰되 주소에는 %로 바꿔 넣는다(파일 이름은 decodeURI로 되돌린다).
+export function landingPath({ region = '', city = '', category = '', period = 'all', month = 0, tag = '', near = false } = {}) {
   if (tag) return `keyword/${tag}/`;
+  if (near) return 'nearby/';
+  if (region && city) return `region/${region}/${encodeURIComponent(city)}/`;
+  if (region && month) return `region/${region}/month/${month}/`;
+  if (month) return `month/${month}/`;
   if (region && category) return `region/${region}/${category}/`;
   if (region && period === 'weekend') return `region/${region}/weekend/`;
   if (region) return `region/${region}/`;
@@ -76,11 +81,14 @@ export function landingPath({ region = '', category = '', period = 'all', tag = 
   return '';
 }
 
-// 목록 제목: "서울 축제 일정", "서울 이번 주말 축제·공연·전시", "10월 전국 축제·공연·전시 일정".
-export function listHeading({ region = '', category = '', period = 'all', tag = '', today }) {
-  const place = region ? REGION_BY_SLUG[region]?.name || '전국' : '전국';
+// 목록 제목: "서울 축제 일정", "강원도 이번 주말 축제·공연·전시", "10월 전국 축제·공연·전시 일정", "강릉 축제 일정".
+export function listHeading({ region = '', city = '', category = '', period = 'all', month = 0, tag = '', near = false, today }) {
+  const regionName = region ? REGION_BY_SLUG[region]?.searchName || '전국' : '전국';
+  const place = city && region ? cityLabel(region, city) : regionName;
   if (tag && KEYWORD_BY_SLUG[tag]) return `${place} #${KEYWORD_BY_SLUG[tag].name} 축제·행사`;
   const what = category ? CATEGORIES[category] : '축제·공연·전시';
+  if (near && !region) return `내 주변 ${what}`;
+  if (month) return `${month}월 ${place} ${what} 일정`;
   switch (period) {
     case 'today':
       return `오늘 ${place} ${what}`;
