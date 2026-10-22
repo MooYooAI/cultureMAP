@@ -64,21 +64,33 @@ export function periodRange(period, today) {
   }
 }
 
+// 월별 페이지(11월 축제)의 기간: 그 달 1일~말일. 이번 달보다 앞선 달은 다음 해로 본다.
+export function monthRange(month, today) {
+  const [y, m] = today.split('-').map(Number);
+  const year = month >= m ? y : y + 1;
+  const last = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const mm = String(month).padStart(2, '0');
+  return { year, from: `${year}-${mm}-01`, to: `${year}-${mm}-${String(last).padStart(2, '0')}` };
+}
+
 function normalizeText(s) {
   return String(s || '').toLowerCase().replace(/\s+/g, '');
 }
 
 export function filterEvents(events, filters = {}, today = todayInSeoul()) {
-  const { region = '', category = '', period = 'all', q = '', freeOnly = false, tag = '' } = filters;
+  const { region = '', city = '', category = '', period = 'all', month = 0, q = '', freeOnly = false, tag = '' } = filters;
   const range = periodRange(period, today);
+  const mRange = month ? monthRange(month, today) : null;
   const query = normalizeText(q);
   return events.filter((e) => {
     if (e.endDate < today) return false;
     if (region && e.region !== region) return false;
+    if (city && e.city !== city) return false;
     if (category && e.category !== category) return false;
     if (freeOnly && !e.isFree) return false;
     if (tag && !(e.tags || []).includes(tag)) return false;
     if (range && (e.startDate > range.to || e.endDate < range.from)) return false;
+    if (mRange && (e.startDate > mRange.to || e.endDate < mRange.from)) return false;
     if (query) {
       const hay = normalizeText([e.title, e.venue, e.city, e.address, e.description].join(' '));
       if (!hay.includes(query)) return false;

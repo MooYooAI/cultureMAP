@@ -9,7 +9,7 @@ import { KEYWORDS, eventKeywords } from '../src/assets/lib/keywords.js';
 import { loadHotFestivals, loadKfesRanking, mergeHot } from './trends.mjs';
 import { appPage, eventPage, notFoundPage } from './templates.mjs';
 import { todayInSeoul, sortEvents, filterEvents, CATEGORIES } from '../src/assets/lib/events.js';
-import { REGIONS } from '../src/assets/lib/regions.js';
+import { REGIONS, isCityName } from '../src/assets/lib/regions.js';
 import { eventPath, landingPath } from '../src/assets/lib/render.js';
 import { readArchive, writeArchive, mergeArchive } from './archive.mjs';
 import { pickHot } from '../src/assets/lib/hot.js';
@@ -64,33 +64,63 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
     JSON.stringify({ generatedAt: new Date().toISOString(), today, sources, events: events.map(({ program, subevent, ...e }) => ({ ...e, description: String(e.description || '').slice(0, 120) })), hot }),
   );
 
-  // 목록 페이지: 전국, 지역별, 그리고 검색어 맞춤 페이지(지역×종류, 지역·전국 이번 주말, 종류별, 이번 달).
+  // 끝난 행사도 1년 동안 상세 페이지를 남긴다(샘플 데이터일 때는 보관함을 건드리지 않는다).
+  let ended = [];
+  if (!noindex) {
+    const merged = mergeArchive(await readArchive(), events, today);
+    ended = merged.ended;
+    await writeArchive(merged.archive);
+  }
+
+  // 시·군·구 페이지: 지금 행사와 지난 1년 행사에 나온 이름으로 만든다(행사가 잠시 없어도 주소가 사라지지 않게).
+  const citiesByRegion = new Map(REGIONS.map((r) => [r.slug, new Map()]));
+  for (const e of [...events, ...ended]) {
+    if (!isCityName(e.region, e.city)) continue;
+    const m = citiesByRegion.get(e.region);
+    if (!m.has(e.city)) m.set(e.city, 0);
+  }
+  for (const e of upcoming) {
+    const m = citiesByRegion.get(e.region);
+    if (m?.has(e.city)) m.set(e.city, m.get(e.city) + 1);
+  }
+  // 바로가기에는 지금 행사가 있는 곳만 많은 순으로.
+  const cityLinks = (region) =>
+    [...(citiesByRegion.get(region) || [])].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'));
+
+  // 목록 페이지: 전국, 지역별, 그리고 검색어 맞춤 페이지(지역×종류, 지역·전국 이번 주말, 종류별, 이번 달, 월별, 지역×월, 시군구, 내 주변).
+  const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
   // 행사가 하나도 없는 페이지는 링크가 깨지지 않게 만들되 검색에서는 뺀다.
   const listPages = [
     {},
     { period: 'weekend' },
     { period: 'month' },
+    { near: true },
+    ...MONTHS.map((month) => ({ month })),
     ...Object.keys(CATEGORIES).map((category) => ({ category })),
     ...KEYWORDS.map((k) => ({ tag: k.slug })),
     ...REGIONS.flatMap((r) => [
       { region: r.slug },
       { region: r.slug, period: 'weekend' },
       ...Object.keys(CATEGORIES).map((category) => ({ region: r.slug, category })),
+      ...MONTHS.map((month) => ({ region: r.slug, month })),
+      ...[...citiesByRegion.get(r.slug).keys()].map((city) => ({ region: r.slug, city })),
     ]),
   ];
   const listUrls = [];
   for (const f of listPages) {
     const p = landingPath(f);
     const list = filterEvents(upcoming, f, today);
+    // 내 주변 페이지는 위치를 받기 전까지 전국 목록을 보여 준다. this-month는 월별 페이지가 대표 주소라 사이트맵에서 뺀다.
     const empty = list.length === 0 && p !== '';
-    if (!empty) listUrls.push(p);
+    if (!empty && f.period !== 'month') listUrls.push(p);
     await write(
-      `${p}index.html`,
+      `${decodeURI(p)}index.html`,
       appPage({
         root: '../'.repeat(p.split('/').filter(Boolean).length) || './',
         path: p,
         ...f,
         events: list,
+        cities: f.region && !f.category && !f.month && f.period !== 'weekend' ? cityLinks(f.region) : [],
         keywordEvents: upcoming,
         hot: pickHot(hot, events, { region: f.region || '', today }),
         kfesIds,
@@ -101,13 +131,6 @@ export async function build({ today = process.env.BUILD_TODAY || todayInSeoul(),
     );
   }
 
-  // 끝난 행사도 1년 동안 상세 페이지를 남긴다(샘플 데이터일 때는 보관함을 건드리지 않는다).
-  let ended = [];
-  if (!noindex) {
-    const merged = mergeArchive(await readArchive(), events, today);
-    ended = merged.ended;
-    await writeArchive(merged.archive);
-  }
   for (const e of [...events, ...ended]) {
     const related = upcoming.filter((x) => x.region === e.region && x.id !== e.id).slice(0, 6);
     await write(`${eventPath(e)}index.html`, eventPage({ e, related, today, sources, noindex }));
