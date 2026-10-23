@@ -151,10 +151,10 @@ ${list}
   <section class="map-pane" aria-label="행사 지도">
     <div id="map"></div>
   </section>
-  <aside class="ad-pane" aria-label="날씨와 광고">
+  <aside class="ad-pane" aria-label="${config.showAds ? '날씨와 광고' : '날씨'}">
     <section id="wx" class="wx-card" aria-label="날씨 예보" hidden></section>
-    <div class="ad-slot ad-tall"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 600</small></p></div>
-    <div class="ad-slot ad-square"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 250</small></p></div>
+    ${config.showAds ? `<div class="ad-slot ad-tall"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 600</small></p></div>
+    <div class="ad-slot ad-square"><span class="ad-label">AD</span><p>광고 배너 자리<br><small>300 × 250</small></p></div>` : ''}
   </aside>
 </main>`;
   const head = `<link rel="stylesheet" href="${root}assets/vendor/leaflet/leaflet.css">
