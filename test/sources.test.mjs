@@ -95,6 +95,9 @@ test('두 번 이스케이프된 제목도 원래 글자로 푼다', () => {
   assert.equal(cleanText('파보 예르비 &amp;amp; 에스토니안'), '파보 예르비 & 에스토니안');
   assert.equal(cleanText('&#39;가을&#x27;'), "'가을'");
   assert.equal(cleanText('A &unknown; B'), 'A &unknown; B');
+  // 출처가 「」 자리에 넣어 보내는 괄호 기호(HTML 4 엔티티)도 푼다
+  assert.equal(cleanText('무대지원사업 &lceil;수요일 수많은 콘서트&rfloor;'), '무대지원사업 ⌈수요일 수많은 콘서트⌋');
+  assert.equal(cleanText('&amp;lang;햄릿&amp;rang; &frac12; &rArr; &rarr;'), '⟨햄릿⟩ ½ ⇒ →');
 });
 
 test('관광공사 소개정보로 시간·요금을 채우고, 받은 건 다시 부르지 않는다', async () => {

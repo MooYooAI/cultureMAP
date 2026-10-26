@@ -4,6 +4,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import path from 'node:path';
 import { addDays } from '../src/assets/lib/events.js';
+import { decodeEntities } from './sources/common.mjs';
 
 export const ARCHIVE_FILE = process.env.EVENT_ARCHIVE || '.cache/event-archive.json';
 // 끝난 뒤 1년까지 보관. Cloudflare Pages 무료 요금제는 배포당 파일 2만 개가 한도라 개수도 묶어 둔다.
@@ -27,11 +28,21 @@ export function mergeArchive(archive, events, today) {
 }
 
 export async function readArchive(file = ARCHIVE_FILE) {
+  let archive;
   try {
-    return JSON.parse(await readFile(file, 'utf8'));
+    archive = JSON.parse(await readFile(file, 'utf8'));
   } catch {
     return {};
   }
+  for (const e of Object.values(archive)) fixText(e);
+  return archive;
+}
+
+// 예전 빌드가 엔티티(&lceil; 등)를 덜 풀고 보관해 둔 글자를 다시 푼다. 이미 끝난 행사는 새로 받지 않기 때문이다.
+const TEXT_FIELDS = ['title', 'city', 'venue', 'address', 'time', 'price', 'description', 'program', 'subevent'];
+export function fixText(e) {
+  for (const k of TEXT_FIELDS) if (typeof e[k] === 'string') e[k] = decodeEntities(e[k]);
+  return e;
 }
 
 export async function writeArchive(archive, file = ARCHIVE_FILE) {
