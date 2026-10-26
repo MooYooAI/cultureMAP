@@ -26,7 +26,7 @@ const DETAIL_MAX_AGE_DAYS = 7;
 export function mapItem(it) {
   const startDate = ymd(it.eventstartdate);
   const endDate = ymd(it.eventenddate) || startDate;
-  const address = [it.addr1, it.addr2].filter(Boolean).join(' ').trim();
+  const address = [it.addr1, it.addr2].map(cleanText).filter(Boolean).join(' ');
   const region = regionFromTourAreaCode(it.areacode) || regionFromText(it.addr1);
   if (!startDate || !region) return null;
   const city = (it.addr1 || '').split(/\s+/)[1] || '';
